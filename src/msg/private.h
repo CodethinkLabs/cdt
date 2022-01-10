@@ -56,5 +56,6 @@ typedef char *(*msg_str_fn)(const struct msg *msg, int id);
 
 /* Handler functions in msg/handler/ .c files. */
 char *msg_str_touch_event(const struct msg *msg, int id);
+char *msg_str_capture_screenshot(const struct msg *msg, int id);
 
 #endif

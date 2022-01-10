@@ -9,6 +9,7 @@
 
 struct msg {
 	enum msg_type {
+		MSG_TYPE_CAPTURE_SCREENSHOT,
 		MSG_TYPE_TOUCH_EVENT_START,
 		MSG_TYPE_TOUCH_EVENT_END,
 	} type;
@@ -18,6 +19,9 @@ struct msg {
 			int x;
 			int y;
 		} touch_event;
+		struct {
+			const char *format;
+		} capture_screenshot;
 	} data;
 };
 
