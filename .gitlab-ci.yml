@@ -1,0 +1,15 @@
+image: debian
+
+build:
+  before_script:
+    - apt-get update -qq && apt-get install --no-install-recommends -y
+          gcc
+          make
+          clang
+          pkg-config
+          libyaml-dev
+          libcyaml-dev
+          libwebsockets-dev
+  script:
+    - make -Bj4 CC=clang
+    - make -Bj4 CC=gcc
