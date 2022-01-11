@@ -12,9 +12,14 @@ struct msg {
 		MSG_TYPE_CAPTURE_SCREENSHOT,
 		MSG_TYPE_TOUCH_EVENT_START,
 		MSG_TYPE_TOUCH_EVENT_END,
+		MSG_TYPE_EVALUATE,
 	} type;
 
 	union {
+		struct {
+			/** JSON escaped JavaScript expression to run. */
+			const char *expression;
+		} evaluate;
 		struct {
 			int x;
 			int y;

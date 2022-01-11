@@ -55,6 +55,7 @@ static inline struct msg_container *msg_str_to_container(char *msg_str)
 typedef char *(*msg_str_fn)(const struct msg *msg, int id);
 
 /* Handler functions in msg/handler/ .c files. */
+char *msg_str_evaluate(const struct msg *msg, int id);
 char *msg_str_touch_event(const struct msg *msg, int id);
 char *msg_str_capture_screenshot(const struct msg *msg, int id);
 
