@@ -18,10 +18,12 @@ static struct {
 	const struct cmd_table *cmd;
 } cmd_g;
 
+extern const struct cmd_table cmd_run;
 extern const struct cmd_table cmd_tap;
 extern const struct cmd_table cmd_screenshot;
 
 const struct cmd_table *cmd_table[] = {
+	&cmd_run,
 	&cmd_tap,
 	&cmd_screenshot,
 };
