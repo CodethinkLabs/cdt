@@ -5,15 +5,16 @@
  */
 
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdbool.h>
-
-#include <libwebsockets.h>
 
 #include "cmd/cmd.h"
 #include "cmd/private.h"
 
 #include "msg/msg.h"
+#include "util/base64.h"
 
 static struct cmd_screenshot_ctx {
 	const char *display;
@@ -60,32 +61,6 @@ static bool cmd_screenshot_init(int argc, const char **argv, void **pw_out)
 	cmd_screenshot_g.display = argv[ARG_DISPLAY];
 	cmd_screenshot_g.finished = false;
 	*pw_out = &cmd_screenshot_g;
-	return true;
-}
-
-static bool b64_decode(const char *b64, size_t b64_len,
-		uint8_t **data_out, size_t *len_out)
-{
-	uint8_t *data;
-	int ret;
-
-	data = malloc(b64_len);
-	if (data == NULL) {
-		fprintf(stderr, "%s: Allocation failed\n", __func__);
-		return false;
-	}
-
-	ret = lws_b64_decode_string_len(b64, (int)b64_len,
-			(char *)data, (int)b64_len);
-	if (ret < 0) {
-		fprintf(stderr, "%s: Base64 decode failed. ret: %i\n",
-				__func__, ret);
-		free(data);
-		return false;
-	}
-
-	*len_out = (size_t)ret;
-	*data_out = data;
 	return true;
 }
 
@@ -157,7 +132,7 @@ static void cmd_screenshot_msg(void *pw, int id, const char *msg, size_t len)
 		return;
 	}
 
-	if (!b64_decode(data, data_len, &scr, &scr_len)) {
+	if (!base64_decode(data, data_len, &scr, &scr_len)) {
 		fprintf(stderr, "%s: Base64 decode failed\n", __func__);
 		ctx->finished = true;
 		return;

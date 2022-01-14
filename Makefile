@@ -25,7 +25,7 @@ CFLAGS += $(shell $(PKG_CONFIG) --cflags $(PKG_DEPS))
 LDFLAGS += $(shell $(PKG_CONFIG) --libs $(PKG_DEPS))
 
 SRC := src/cdt.c src/display.c src/cmd/cmd.c src/msg/msg.c src/msg/queue.c
-SRC += src/util/buffer.c
+SRC += src/util/base64.c src/util/buffer.c
 SRC += $(shell find src/cmd/handler -type f -name *.c)
 SRC += $(shell find src/msg/handler -type f -name *.c)
 OBJ := $(patsubst %.c,%.o, $(addprefix $(BUILDDIR)/,$(SRC)))
