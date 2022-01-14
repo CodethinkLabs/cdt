@@ -98,36 +98,48 @@ static void cmd_screenshot_write(const uint8_t *scr, size_t scr_len,
 	fprintf(stderr, "Saved: %s\n", buf);
 }
 
-static void cmd_screenshot_msg(void *pw, int id, const char *msg, size_t len)
+static bool get_data(const char *msg, size_t len,
+		const char **data_out, size_t *data_len)
 {
-	struct cmd_screenshot_ctx *ctx = pw;
 	const char *marker = "\"data\":\"";
 	const char *data;
 	const char *end;
+
+	data = strstr(msg, marker);
+	if (data == NULL) {
+		fprintf(stderr, "%s: Data not found: %*s\n",
+				__func__, (int)len, msg);
+		return false;
+	}
+
+	data += strlen(marker);
+	end = strchr(data, '"');
+	if (end == NULL || end < data) {
+		fprintf(stderr, "%s: Data terminator missing: %*s\n",
+				__func__, (int)len, msg);
+		return false;
+	}
+
+	*data_len = (size_t)(end - data);
+	*data_out = data;
+	return true;
+}
+
+static void cmd_screenshot_msg(void *pw, int id, const char *msg, size_t len)
+{
+	struct cmd_screenshot_ctx *ctx = pw;
+	const char *data;
 	size_t data_len;
 	size_t scr_len;
 	uint8_t *scr;
 
 	(void)(id);
 
-	data = strstr(msg, marker);
-	if (data == NULL) {
-		fprintf(stderr, "%s: Screenshot data not found: %*s\n",
-				__func__, (int)len, msg);
+	if (!get_data(msg, len, &data, &data_len)) {
 		ctx->finished = true;
 		return;
 	}
 
-	data += strlen(marker);
-	end = strchr(data, '"');
-	if (end == NULL || end < data) {
-		fprintf(stderr, "%s: Screenshot data terminator missing: %*s\n",
-				__func__, (int)len, msg);
-		ctx->finished = true;
-		return;
-	}
-
-	data_len = (size_t)(end - data);
 	if (data_len == 0) {
 		fprintf(stderr, "%s: Zero length screenshot: %*s\n",
 				__func__, (int)len, msg);
