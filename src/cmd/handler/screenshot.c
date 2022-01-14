@@ -40,6 +40,9 @@ static bool cmd_screenshot_init(int argc, const char **argv, void **pw_out)
 				argv[ARG_CDT],
 				argv[ARG_DISPLAY],
 				argv[ARG_SCREENSHOT]);
+		fprintf(stderr, "\n");
+		fprintf(stderr, "Optional:\n");
+		fprintf(stderr, "  FMT -- Image format: png, jpeg\n");
 		return false;
 	}
 
