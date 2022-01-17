@@ -17,6 +17,7 @@
 #include "msg/msg.h"
 #include "cmd/private.h"
 
+#include "util/file.h"
 #include "util/util.h"
 #include "util/base64.h"
 
@@ -81,42 +82,6 @@ static void cmd_screencast_msg(void *pw, int id, const char *msg, size_t len)
 
 	fprintf(stderr, "Received response with id %i: %.*s\n",
 			id, (int)len, msg);
-}
-
-static void cmd_screencast_write(const uint8_t *scr, size_t scr_len,
-		const char *display, const char *format, double timestamp)
-{
-	const char *slash;
-	char *filename;
-	int ret;
-	FILE *f;
-
-	slash = strrchr(display, '/');
-	if (slash != NULL) {
-		display = slash + 1;
-	}
-
-	ret = asprintf(&filename, "screenshot-%s-%f.%s",
-			display, timestamp, format);
-	if (ret < 0) {
-		fprintf(stderr, "%s: Failed to construct screenshot filename\n",
-				__func__);
-		return;
-	}
-
-	f = fopen(filename, "wb");
-	if (f == NULL) {
-		fprintf(stderr, "%s: Failed to open '%s'\n", __func__,
-				filename);
-		free(filename);
-		return;
-	}
-
-	fwrite(scr, scr_len, 1, f);
-	fclose(f);
-	fprintf(stderr, "Saved: %s\n", filename);
-
-	free(filename);
 }
 
 struct scan_ctx {
@@ -225,10 +190,11 @@ static void cmd_screencast_evt(void *pw, const char *method, size_t method_len,
 			return;
 		}
 
-		cmd_screencast_write(scr, scr_len,
-				ctx->display, ctx->format,
-				scan.timestamp);
-
+		file_write(scr, scr_len,
+				"screenshot-%s-%f.%s",
+				str_get_leaf(ctx->display),
+				scan.timestamp,
+				ctx->format);
 		free(scr);
 	}
 }
