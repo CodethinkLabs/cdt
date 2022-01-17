@@ -254,6 +254,10 @@ static const struct msg_scan_spec *msg_str_scan_get_match(
 			continue;
 		}
 
+		if (strncmp(pos, s->key, key_len) != 0) {
+			continue;
+		}
+
 		pos += key_len;
 		if (pos + 2 >= end ||
 		    pos[0] != '"' ||
