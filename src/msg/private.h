@@ -57,6 +57,8 @@ typedef char *(*msg_str_fn)(const struct msg *msg, int id);
 /* Handler functions in msg/handler/ .c files. */
 char *msg_str_evaluate(const struct msg *msg, int id);
 char *msg_str_touch_event(const struct msg *msg, int id);
+char *msg_str_start_screencast(const struct msg *msg, int id);
 char *msg_str_capture_screenshot(const struct msg *msg, int id);
+char *msg_str_screencast_frame_ack(const struct msg *msg, int id);
 
 #endif

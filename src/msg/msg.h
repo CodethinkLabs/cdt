@@ -9,7 +9,10 @@
 
 struct msg {
 	enum msg_type {
+		MSG_TYPE_SCREENCAST_FRAME_ACK,
 		MSG_TYPE_CAPTURE_SCREENSHOT,
+		MSG_TYPE_START_SCREENCAST,
+		MSG_TYPE_STOP_SCREENCAST,
 		MSG_TYPE_TOUCH_EVENT_START,
 		MSG_TYPE_TOUCH_EVENT_END,
 		MSG_TYPE_EVALUATE,
@@ -27,6 +30,16 @@ struct msg {
 		struct {
 			const char *format;
 		} capture_screenshot;
+		struct {
+			/* If max width or height are zero the resolution
+			 * will be unconstrained. */
+			int max_width;
+			int max_height;
+			const char *format;
+		} start_screencast;
+		struct {
+			int session_id;
+		} screencast_frame_ack;
 	} data;
 };
 
