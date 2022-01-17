@@ -44,12 +44,14 @@ If you run `cdt`  with a valid display, it will list the available commands.
 
 At the moment, the available commands are:
 
-| Command    | Function                                                      |
-| ---------- | ------------------------------------------------------------- |
-| tap        | Issues touch events to simulate tapping at given coordinate   |
-| run        | Runs the supplied JavaScript script on the remote             |
-| run-log    | Runs the supplied JavaScript on remote, capturing console.log |
-| screenshot | Fetches screenshot of the remote and saves locally            |
+| Command    | Function                                                        |
+| ---------- | --------------------------------------------------------------- |
+| sdl        | Interactive front end that renders display and supports tapping |
+| tap        | Issues touch events to simulate tapping at given coordinate     |
+| run        | Runs the supplied JavaScript script on the remote               |
+| run-log    | Runs the supplied JavaScript on remote, capturing console.log   |
+| screencast | Fetches continuous screenshots and saves locally                |
+| screenshot | Fetches screenshot of the remote and saves locally              |
 
 For example, if you run:
 
