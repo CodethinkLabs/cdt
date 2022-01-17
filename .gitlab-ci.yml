@@ -7,8 +7,10 @@ build:
           make
           clang
           pkg-config
+          libsdl2-dev
           libyaml-dev
           libcyaml-dev
+          libsdl2-image-dev
           libwebsockets-dev
   script:
     - make -Bj4 CC=clang
