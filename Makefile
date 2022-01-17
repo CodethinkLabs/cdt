@@ -20,7 +20,7 @@ CFLAGS += -Wall -Wextra -pedantic -Wconversion -Wwrite-strings -Wcast-align \
 		-Wmissing-prototypes -Wredundant-decls -Wundef -Wvla \
 		-Wdeclaration-after-statement
 
-PKG_DEPS := libwebsockets libcyaml
+PKG_DEPS := libwebsockets libcyaml sdl2 SDL2_image
 CFLAGS += $(shell $(PKG_CONFIG) --cflags $(PKG_DEPS))
 LDFLAGS += $(shell $(PKG_CONFIG) --libs $(PKG_DEPS))
 
