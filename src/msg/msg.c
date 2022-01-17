@@ -4,7 +4,9 @@
  * Copyright (c) 2022 Codethink
  */
 
+#include <assert.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdbool.h>
 
 #include "msg/msg.h"
@@ -119,7 +121,6 @@ bool msg_queue_for_send(const struct msg *msg, int *id_out)
 }
 
 struct msg_str_ctx {
-	bool have_id;
 	bool quote;
 	bool begin;
 	int depth;
@@ -170,9 +171,148 @@ enum msg_scan msg_str_chunk_scan(const char *str, size_t len)
 	return MSG_SCAN_COMPLETE;
 }
 
-bool msg_str_id(const char *str, size_t len, int *id)
+static bool msg_str_get_value_len(
+		const char *str, const char *end,
+		enum msg_scan_type type,
+		size_t *len)
 {
-	static struct msg_str_ctx c;
+	const char *pos = str;
+
+	switch (type) {
+	case MSG_SCAN_TYPE_INTEGER:
+	case MSG_SCAN_TYPE_FLOATING_POINT:
+		if (pos + 1 >= end || pos[0] == '"') {
+			return false;
+		}
+		while (pos < end) {
+			if (*pos == '\\') {
+				pos += 2;
+				continue;
+			} else if (*pos == ',' || *pos == '}' || *pos == ']') {
+				*len = (size_t)(pos - str);
+				return true;
+			} else if (*pos == '"') {
+				return false;
+			}
+			pos++;
+		}
+		break;
+	case MSG_SCAN_TYPE_STRING:
+		if (pos + 1 >= end || pos[0] != '"') {
+			return false;
+		}
+		pos++;
+		str++;
+
+		while (pos < end) {
+			if (*pos == '\\') {
+				pos += 2;
+				continue;
+			} else if (*pos == '"') {
+				*len = (size_t)(pos - str);
+				return true;
+			} else if (*pos == ',' || *pos == '}' || *pos == ']') {
+				return false;
+			}
+			pos++;
+		}
+		break;
+	}
+
+	return false;
+}
+
+static const struct msg_scan_spec *msg_str_scan_get_match(
+		const char *str, const char *end,
+		int depth,
+		const struct msg_scan_spec *spec,
+		unsigned spec_count,
+		union msg_scan_data *value)
+{
+	size_t value_len;
+
+	assert(str < end && *str == '"');
+
+	str++;
+	if (str == end) {
+		return NULL;
+	}
+
+	for (unsigned i = 0; i < spec_count; i++) {
+		const struct msg_scan_spec *s = &spec[i];
+		const char *pos = str;
+		size_t key_len;
+
+		if (s->depth != 0 && s->depth != depth) {
+			continue;
+		}
+
+		key_len = strlen(s->key);
+		if (pos + key_len >= end) {
+			continue;
+		}
+
+		pos += key_len;
+		if (pos + 2 >= end ||
+		    pos[0] != '"' ||
+		    pos[1] != ':') {
+			continue;
+		}
+		pos += 2;
+
+		if (!msg_str_get_value_len(pos, end, s->type, &value_len)) {
+			continue;
+		}
+
+		switch (s->type) {
+		case MSG_SCAN_TYPE_FLOATING_POINT:
+			{
+				double temp;
+				char *fin = NULL;
+
+				errno = 0;
+				temp = strtod(pos, &fin);
+
+				if (fin == pos || errno == ERANGE) {
+					return NULL;
+				}
+
+				value->floating_point = temp;
+			}
+			return s;
+
+		case MSG_SCAN_TYPE_INTEGER:
+			{
+				long long temp;
+				char *fin = NULL;
+
+				errno = 0;
+				temp = strtoll(pos, &fin, 0);
+
+				if (fin == pos || errno == ERANGE ||
+				    temp < INT64_MIN || temp > INT64_MAX) {
+					return NULL;
+				}
+
+				value->integer = temp;
+			}
+			return s;
+
+		case MSG_SCAN_TYPE_STRING:
+			value->string.str = pos + 1;
+			value->string.len = value_len;
+			return s;
+		}
+	}
+
+	return NULL;
+}
+
+bool msg_str_scan(const char *str, size_t len,
+		const struct msg_scan_spec *spec, unsigned spec_count,
+		msg_scan_cb cb, void *pw)
+{
+	struct msg_str_ctx c = { 0 };
 	const char *end = str + len;
 
 	if (c.depth == 0) {
@@ -190,10 +330,17 @@ bool msg_str_id(const char *str, size_t len, int *id)
 		case ']': if (!c.quote) {                 c.depth--; } break;
 		case '}': if (!c.quote) {                 c.depth--; } break;
 		case '"':
-			if (!c.quote && c.begin && c.depth == 1) {
-				int ret = sscanf(str, "\"id\":%i", &c.id);
-				if (ret == 1 && str != end - 1) {
-					c.have_id = true;
+			if (!c.quote && c.begin) {
+				const struct msg_scan_spec *key;
+				union msg_scan_data value;
+
+				key = msg_str_scan_get_match(str, end, c.depth,
+						spec, spec_count, &value);
+				if (key != NULL) {
+					bool finish = cb(pw, key, &value);
+					if (finish) {
+						goto out;
+					}
 				}
 			}
 			c.quote = !c.quote;
@@ -206,16 +353,6 @@ bool msg_str_id(const char *str, size_t len, int *id)
 		str++;
 	}
 
-	if (c.depth != 0) {
-		return false;
-	}
-	if (!c.have_id) {
-		fprintf(stderr, "Failed to find message ID\n");
-		msg_str_chunk_scan_reset(&c);
-		return false;
-	}
-
-	*id = c.id;
-	msg_str_chunk_scan_reset(&c);
+out:
 	return true;
 }

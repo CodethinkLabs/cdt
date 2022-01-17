@@ -51,11 +51,64 @@ static bool cdt_send_msg(struct lws *wsi)
 	return true;
 }
 
+static bool cdt_msg_scan_cb(
+		void *pw,
+		const struct msg_scan_spec *key,
+		const union  msg_scan_data *value)
+{
+	assert(key != NULL);
+	assert(value != NULL);
+
+	CDT_UNUSED(pw);
+
+	if (key->type == MSG_SCAN_TYPE_INTEGER &&
+			strcmp(key->key, "id") == 0) {
+		int id = (int)value->integer;
+		char *msg_sent;
+
+		msg_sent = msg_queue_find_by_id(msg_queue_get_sent(), id);
+		if (msg_sent == NULL) {
+			fprintf(stderr, "%s: Failed to find sent message: %i\n",
+					__func__, id);
+		} else {
+			msg_queue_remove(msg_queue_get_sent(), msg_sent);
+			msg_destroy(msg_sent);
+		}
+
+		cmd_msg(cdt_g.cmd_pw, id,
+				cdt_g.multipart_msg.data,
+				cdt_g.multipart_msg.len);
+
+		return true;
+
+	} else if (key->type == MSG_SCAN_TYPE_STRING &&
+			strcmp(key->key, "method") == 0) {
+		cmd_evt(cdt_g.cmd_pw,
+				value->string.str,
+				value->string.len,
+				cdt_g.multipart_msg.data,
+				cdt_g.multipart_msg.len);
+		return true;
+	}
+
+	return false;
+}
+
 static bool cdt_rec_msg(const char *msg_rec, size_t len)
 {
-	int id;
-	char *msg_sent;
 	enum msg_scan scan;
+	static const struct msg_scan_spec spec[] = {
+		{
+			.key = "id",
+			.type = MSG_SCAN_TYPE_INTEGER,
+			.depth = 1,
+		},
+		{
+			.key = "method",
+			.type = MSG_SCAN_TYPE_STRING,
+			.depth = 1,
+		},
+	};
 
 	scan = msg_str_chunk_scan(msg_rec, len);
 
@@ -71,27 +124,15 @@ static bool cdt_rec_msg(const char *msg_rec, size_t len)
 			return false;
 		}
 
-		if (!msg_str_id(cdt_g.multipart_msg.data,
-				cdt_g.multipart_msg.len, &id)) {
-			fprintf(stderr, "%s: Message ID not found: %*s\n",
-					__func__,
-					(int)cdt_g.multipart_msg.len,
-					cdt_g.multipart_msg.data);
-			return false;
-		}
-		msg_sent = msg_queue_find_by_id(msg_queue_get_sent(), id);
-		if (msg_sent == NULL) {
-			fprintf(stderr, "%s: Failed to find sent message: %*s\n",
-					__func__, (int)len, msg_rec);
-			return false;
-		}
-
-		msg_queue_remove(msg_queue_get_sent(), msg_sent);
-		msg_destroy(msg_sent);
-
-		cmd_msg(cdt_g.cmd_pw, id,
+		if (!msg_str_scan(
 				cdt_g.multipart_msg.data,
-				cdt_g.multipart_msg.len);
+				cdt_g.multipart_msg.len,
+				spec, CDT_ARRAY_COUNT(spec),
+				cdt_msg_scan_cb, NULL)) {
+			fprintf(stderr, "%s: Failed to scan message: %*s\n",
+					__func__, (int)len, msg_rec);
+		}
+
 		cdt_buffer_clear(&cdt_g.multipart_msg);
 		break;
 

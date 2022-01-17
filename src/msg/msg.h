@@ -56,6 +56,30 @@ enum msg_scan {
  */
 enum msg_scan msg_str_chunk_scan(const char *str, size_t len);
 
-bool msg_str_id(const char *str, size_t len, int *id);
+struct msg_scan_spec {
+	int depth;
+	const char *key;
+	enum msg_scan_type {
+		MSG_SCAN_TYPE_FLOATING_POINT,
+		MSG_SCAN_TYPE_INTEGER,
+		MSG_SCAN_TYPE_STRING,
+	} type;
+};
+union msg_scan_data {
+	struct {
+		const char *str;
+		size_t len;
+	} string;
+	int64_t integer;
+	double floating_point;
+};
+
+typedef bool (*msg_scan_cb)(void *pw,
+		const struct msg_scan_spec *key,
+		const union  msg_scan_data *value);
+
+bool msg_str_scan(const char *str, size_t len,
+		const struct msg_scan_spec *spec, unsigned spec_count,
+		msg_scan_cb cb, void *pw);
 
 #endif
