@@ -14,6 +14,8 @@
 #include "cmd/private.h"
 
 #include "msg/msg.h"
+#include "util/file.h"
+#include "util/util.h"
 #include "util/base64.h"
 
 static struct cmd_screenshot_ctx {
@@ -65,37 +67,6 @@ static bool cmd_screenshot_init(int argc, const char **argv, void **pw_out)
 	cmd_screenshot_g.finished = false;
 	*pw_out = &cmd_screenshot_g;
 	return true;
-}
-
-static void cmd_screenshot_write(const uint8_t *scr, size_t scr_len,
-		const char *display, const char *format)
-{
-	const char *slash;
-	char buf[128];
-	int ret;
-	FILE *f;
-
-	slash = strrchr(display, '/');
-	if (slash != NULL) {
-		display = slash + 1;
-	}
-
-	ret = snprintf(buf, sizeof(buf), "screenshot-%s.%s", display, format);
-	if (ret < 0 || (unsigned)ret >= sizeof(buf)) {
-		fprintf(stderr, "%s: Failed to construct screenshot filename\n",
-				__func__);
-		return;
-	}
-
-	f = fopen(buf, "wb");
-	if (f == NULL) {
-		fprintf(stderr, "%s: Failed to open '%s'\n", __func__, buf);
-		return;
-	}
-
-	fwrite(scr, scr_len, 1, f);
-	fclose(f);
-	fprintf(stderr, "Saved: %s\n", buf);
 }
 
 static bool get_data(const char *msg, size_t len,
@@ -153,7 +124,10 @@ static void cmd_screenshot_msg(void *pw, int id, const char *msg, size_t len)
 		return;
 	}
 
-	cmd_screenshot_write(scr, scr_len, ctx->display, ctx->format);
+	file_write(scr, scr_len,
+			"screenshot-%s.%s",
+			str_get_leaf(ctx->display),
+			ctx->format);
 	free(scr);
 
 	ctx->finished = true;
