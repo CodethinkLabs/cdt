@@ -33,11 +33,23 @@ bool cmd_init(int argc, const char **argv, void **pw_out);
  * Let the command handle a received message.
  *
  * \param[in] pw   The command's private context.
- * \param[in] id   Id of dent message that this is a response to.
+ * \param[in] id   Id of message that this is a response to.
  * \param[in] msg  Received message.
  * \param[in] len  Length of msg in bytes.
  */
 void cmd_msg(void *pw, int id, const char *msg, size_t len);
+
+/**
+ * Let the command handle a received message.
+ *
+ * \param[in] pw          The command's private context.
+ * \param[in] method      The event method name.
+ * \param[in] method_len  Length of method in bytes.
+ * \param[in] msg         Received message.
+ * \param[in] len         Length of msg in bytes.
+ */
+void cmd_evt(void *pw, const char *method, size_t method_len,
+		const char *msg, size_t len);
 
 /**
  * .Tick the command.

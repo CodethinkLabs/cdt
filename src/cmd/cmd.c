@@ -84,6 +84,19 @@ void cmd_msg(void *pw, int id, const char *msg, size_t len)
 	}
 }
 
+void cmd_evt(void *pw, const char *method, size_t method_len,
+		const char *msg, size_t len)
+{
+	if (cmd_g.cmd == NULL) {
+		fprintf(stderr, "%s: cmd uninitialised!\n", __func__);
+		return;
+	}
+
+	if (cmd_g.cmd->evt != NULL) {
+		cmd_g.cmd->evt(pw, method, method_len, msg, len);
+	}
+}
+
 bool cmd_tick(void *pw)
 {
 	if (cmd_g.cmd == NULL) {

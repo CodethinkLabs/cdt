@@ -15,6 +15,8 @@ struct cmd_table {
 
 	bool (*init)(int argc, const char **argv, void **pw_out);
 	void (*msg) (void *pw, int id, const char *msg, size_t len);
+	void (*evt) (void *pw, const char *method, size_t method_len,
+			const char *msg, size_t len);
 	bool (*tick)(void *pw);
 	void (*fini)(void *pw);
 };
