@@ -40,15 +40,8 @@ static bool cmd_screencast_init(int argc, const char **argv, void **pw_out)
 		ARG__COUNT,
 	};
 
-	if (argc < ARG__COUNT) {
-		fprintf(stderr, "Usage:\n");
-		fprintf(stderr, "  %s %s %s [MAX_SIZE]\n",
-				argv[ARG_CDT],
-				argv[ARG_DISPLAY],
-				argv[ARG_SCREENCAST]);
-		fprintf(stderr, "\n");
-		fprintf(stderr, "Optional:\n");
-		fprintf(stderr, "  MAX_SIZE -- Maximum x/y dimension in px\n");
+	if (argc < ARG_MAX_SIZE || argc > ARG__COUNT) {
+		cmd_help(argc, argv, NULL);
 		return false;
 	}
 
@@ -206,10 +199,33 @@ static bool cmd_screencast_tick(void *pw)
 	return true;
 }
 
+static void cmd_screencast_help(int argc, const char **argv);
+
 const struct cmd_table cmd_screencast = {
 	.cmd  = "screencast",
 	.init = cmd_screencast_init,
+	.help = cmd_screencast_help,
 	.msg  = cmd_screencast_msg,
 	.evt  = cmd_screencast_evt,
 	.tick = cmd_screencast_tick,
 };
+
+static void cmd_screencast_help(int argc, const char **argv)
+{
+	enum {
+		ARG_CDT,
+		ARG_DISPLAY,
+		ARG__COUNT,
+	};
+
+	CDT_UNUSED(argc);
+
+	fprintf(stderr, "Usage:\n");
+	fprintf(stderr, "  %s %s %s [MAX_SIZE]\n",
+			argv[ARG_CDT],
+			argv[ARG_DISPLAY],
+			cmd_screencast.cmd);
+	fprintf(stderr, "\n");
+	fprintf(stderr, "Optional:\n");
+	fprintf(stderr, "  MAX_SIZE -- Maximum x/y dimension in px\n");
+}

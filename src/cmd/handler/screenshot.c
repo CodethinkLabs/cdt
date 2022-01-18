@@ -36,15 +36,8 @@ static bool cmd_screenshot_init(int argc, const char **argv, void **pw_out)
 		ARG__COUNT,
 	};
 
-	if (argc < ARG_FMT) {
-		fprintf(stderr, "Usage:\n");
-		fprintf(stderr, "  %s %s %s [FMT]\n",
-				argv[ARG_CDT],
-				argv[ARG_DISPLAY],
-				argv[ARG_SCREENSHOT]);
-		fprintf(stderr, "\n");
-		fprintf(stderr, "Optional:\n");
-		fprintf(stderr, "  FMT -- Image format: png, jpeg\n");
+	if (argc < ARG_FMT || argc > ARG__COUNT) {
+		cmd_help(argc, argv, NULL);
 		return false;
 	}
 
@@ -139,9 +132,32 @@ static bool cmd_screenshot_tick(void *pw)
 	return !ctx->finished;
 }
 
+static void cmd_screenshot_help(int argc, const char **argv);
+
 const struct cmd_table cmd_screenshot = {
 	.cmd  = "screenshot",
 	.init = cmd_screenshot_init,
+	.help = cmd_screenshot_help,
 	.msg  = cmd_screenshot_msg,
 	.tick = cmd_screenshot_tick,
 };
+
+static void cmd_screenshot_help(int argc, const char **argv)
+{
+	enum {
+		ARG_CDT,
+		ARG_DISPLAY,
+		ARG__COUNT,
+	};
+
+	CDT_UNUSED(argc);
+
+	fprintf(stderr, "Usage:\n");
+	fprintf(stderr, "  %s %s %s [FMT]\n",
+			argv[ARG_CDT],
+			argv[ARG_DISPLAY],
+			cmd_screenshot.cmd);
+	fprintf(stderr, "\n");
+	fprintf(stderr, "Optional:\n");
+	fprintf(stderr, "  FMT -- Image format: png, jpeg\n");
+}

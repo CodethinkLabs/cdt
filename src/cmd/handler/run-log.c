@@ -17,6 +17,7 @@
 #include "cmd/private.h"
 
 #include "msg/msg.h"
+#include "util/util.h"
 
 /* The log messages arrive as an array of arrays as a JSON string.
  * These are the schema to decode that to a `char ***` type. */
@@ -139,17 +140,8 @@ static bool cmd_run_log_init(int argc, const char **argv, void **pw_out)
 		ARG__COUNT,
 	};
 
-	if (argc < ARG_END_MARKER) {
-		fprintf(stderr, "Usage:\n");
-		fprintf(stderr, "  %s %s %s <SCRIPT> [END_MARKER]\n",
-				argv[ARG_CDT],
-				argv[ARG_DISPLAY],
-				argv[ARG_RUN_LOG]);
-		fprintf(stderr, "\n");
-		fprintf(stderr, "  SCRIPT     -- JSON-escaped JavaScript\n");
-		fprintf(stderr, "\n");
-		fprintf(stderr, "Optional:\n");
-		fprintf(stderr, "  END_MARKER -- String indicating end of log\n");
+	if (argc < ARG_END_MARKER || argc > ARG__COUNT) {
+		cmd_help(argc, argv, NULL);
 		return false;
 	}
 
@@ -330,9 +322,35 @@ static void cmd_run_log_fini(void *pw)
 	cyaml_free(&config, &value_schema, ctx->log, ctx->log_count);
 }
 
+static void cmd_run_log_help(int argc, const char **argv);
+
 const struct cmd_table cmd_run_log = {
 	.cmd  = "run-log",
 	.init = cmd_run_log_init,
+	.help = cmd_run_log_help,
 	.msg  = cmd_run_log_msg,
 	.fini = cmd_run_log_fini,
 };
+
+static void cmd_run_log_help(int argc, const char **argv)
+{
+	enum {
+		ARG_CDT,
+		ARG_DISPLAY,
+		ARG__COUNT,
+	};
+
+	CDT_UNUSED(argc);
+
+	fprintf(stderr, "Usage:\n");
+	fprintf(stderr, "  %s %s %s <SCRIPT> [END_MARKER]\n",
+			argv[ARG_CDT],
+			argv[ARG_DISPLAY],
+			cmd_run_log.cmd);
+	fprintf(stderr, "\n");
+	fprintf(stderr, "Parameters:\n");
+	fprintf(stderr, "  SCRIPT     -- JSON-escaped JavaScript\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "Optional:\n");
+	fprintf(stderr, "  END_MARKER -- String indicating end of log\n");
+}

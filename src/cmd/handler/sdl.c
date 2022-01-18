@@ -79,11 +79,7 @@ static bool cmd_sdl_init(int argc, const char **argv, void **pw_out)
 	};
 
 	if (argc != ARG__COUNT) {
-		fprintf(stderr, "Usage:\n");
-		fprintf(stderr, "  %s %s %s\n",
-				argv[ARG_CDT],
-				argv[ARG_DISPLAY],
-				argv[ARG_SDL]);
+		cmd_help(argc, argv, NULL);
 		return false;
 	}
 
@@ -451,11 +447,31 @@ static bool cmd_sdl_tick(void *pw)
 	return running;
 }
 
+static void cmd_sdl_help(int argc, const char **argv);
+
 const struct cmd_table cmd_sdl = {
 	.cmd  = "sdl",
 	.init = cmd_sdl_init,
+	.help = cmd_sdl_help,
 	.msg  = cmd_sdl_msg,
 	.evt  = cmd_sdl_evt,
 	.tick = cmd_sdl_tick,
 	.fini = cmd_sdl_fini,
 };
+
+static void cmd_sdl_help(int argc, const char **argv)
+{
+	enum {
+		ARG_CDT,
+		ARG_DISPLAY,
+		ARG__COUNT,
+	};
+
+	CDT_UNUSED(argc);
+
+	fprintf(stderr, "Usage:\n");
+	fprintf(stderr, "  %s %s %s\n",
+			argv[ARG_CDT],
+			argv[ARG_DISPLAY],
+			cmd_sdl.cmd);
+}

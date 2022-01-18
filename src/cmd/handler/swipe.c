@@ -6,12 +6,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdbool.h>
 
 #include "cmd/cmd.h"
 #include "cmd/private.h"
 
 #include "msg/msg.h"
+#include "util/util.h"
 
 static bool cmd_swipe_init(int argc, const char **argv, void **pw_out)
 {
@@ -30,19 +32,7 @@ static bool cmd_swipe_init(int argc, const char **argv, void **pw_out)
 	};
 
 	if (argc < ARG_SPEED || argc > ARG__COUNT) {
-		fprintf(stderr, "Usage:\n");
-		fprintf(stderr, "  %s %s %s <X> <Y> <X_DIST> <Y_DIST> [SPEED]\n",
-				argv[ARG_CDT],
-				argv[ARG_DISPLAY],
-				argv[ARG_SWIPE]);
-		fprintf(stderr, "\n");
-		fprintf(stderr, "  X      -- X coordinate of start\n");
-		fprintf(stderr, "  Y      -- Y coordinate of start\n");
-		fprintf(stderr, "  X_DIST -- Scroll distance (X-axis, positive to scroll left)\n");
-		fprintf(stderr, "  Y_DIST -- Scroll distance (Y-axis, positive to scroll left)\n");
-		fprintf(stderr, "\n");
-		fprintf(stderr, "Optional:\n");
-		fprintf(stderr, "  SPEED  -- Default: 800\n");
+		cmd_help(argc, argv, NULL);
 		return false;
 	}
 
@@ -76,8 +66,37 @@ static void cmd_swipe_msg(void *pw, int id, const char *msg, size_t len)
 			id, (int)len, msg);
 }
 
+static void cmd_swipe_help(int argc, const char **argv);
+
 const struct cmd_table cmd_swipe = {
 	.cmd  = "swipe",
 	.init = cmd_swipe_init,
+	.help = cmd_swipe_help,
 	.msg  = cmd_swipe_msg,
 };
+
+static void cmd_swipe_help(int argc, const char **argv)
+{
+	enum {
+		ARG_CDT,
+		ARG_DISPLAY,
+		ARG__COUNT,
+	};
+
+	CDT_UNUSED(argc);
+
+	fprintf(stderr, "Usage:\n");
+	fprintf(stderr, "  %s %s %s <X> <Y> <X_DIST> <Y_DIST> [SPEED]\n",
+			argv[ARG_CDT],
+			argv[ARG_DISPLAY],
+			cmd_swipe.cmd);
+	fprintf(stderr, "\n");
+	fprintf(stderr, "Parameters:\n");
+	fprintf(stderr, "  X      -- X coordinate of start\n");
+	fprintf(stderr, "  Y      -- Y coordinate of start\n");
+	fprintf(stderr, "  X_DIST -- Scroll distance (X-axis)\n");
+	fprintf(stderr, "  Y_DIST -- Scroll distance (Y-axis)\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "Optional:\n");
+	fprintf(stderr, "  SPEED  -- Pixels per second. (Default: 800)\n");
+}

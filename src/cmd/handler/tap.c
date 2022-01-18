@@ -6,12 +6,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdbool.h>
 
 #include "cmd/cmd.h"
 #include "cmd/private.h"
 
 #include "msg/msg.h"
+#include "util/util.h"
 
 static bool cmd_tap_init(int argc, const char **argv, void **pw_out)
 {
@@ -26,11 +28,7 @@ static bool cmd_tap_init(int argc, const char **argv, void **pw_out)
 	};
 
 	if (argc < ARG__COUNT) {
-		fprintf(stderr, "Usage:\n");
-		fprintf(stderr, "  %s %s %s <X> <Y>\n",
-				argv[ARG_CDT],
-				argv[ARG_DISPLAY],
-				argv[ARG_TAP]);
+		cmd_help(argc, argv, NULL);
 		return false;
 	}
 
@@ -62,8 +60,32 @@ static void cmd_tap_msg(void *pw, int id, const char *msg, size_t len)
 			id, (int)len, msg);
 }
 
+static void cmd_tap_help(int argc, const char **argv);
+
 const struct cmd_table cmd_tap = {
 	.cmd  = "tap",
 	.init = cmd_tap_init,
+	.help = cmd_tap_help,
 	.msg  = cmd_tap_msg,
 };
+
+static void cmd_tap_help(int argc, const char **argv)
+{
+	enum {
+		ARG_CDT,
+		ARG_DISPLAY,
+		ARG__COUNT,
+	};
+
+	CDT_UNUSED(argc);
+
+	fprintf(stderr, "Usage:\n");
+	fprintf(stderr, "  %s %s %s <X> <Y>\n",
+			argv[ARG_CDT],
+			argv[ARG_DISPLAY],
+			cmd_tap.cmd);
+	fprintf(stderr, "\n");
+	fprintf(stderr, "Parameters:\n");
+	fprintf(stderr, "  X -- X coordinate to tap (px from top edge).\n");
+	fprintf(stderr, "  Y -- Y coordinate to tap (px from left edge).\n");
+}

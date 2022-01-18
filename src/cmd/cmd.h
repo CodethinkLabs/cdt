@@ -17,6 +17,15 @@
  */
 
 /**
+ * Print help text for the command.
+ *
+ * \param[in]  argc    Number of command line arguments.
+ * \param[in]  argv    String vector containing command line arguments.
+ * \param[in]  cmd     Command to get help for, or NULL to use argument.
+ */
+void cmd_help(int argc, const char **argv, const char *cmd);
+
+/**
  * Initialise the command.
  *
  * Detects which subcommand is requested, reads and CLI arguments it needs,

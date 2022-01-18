@@ -18,6 +18,7 @@ static struct {
 	const struct cmd_table *cmd;
 } cmd_g;
 
+extern const struct cmd_table cmd_help_table;
 extern const struct cmd_table cmd_sdl;
 extern const struct cmd_table cmd_run;
 extern const struct cmd_table cmd_tap;
@@ -27,6 +28,7 @@ extern const struct cmd_table cmd_screencast;
 extern const struct cmd_table cmd_screenshot;
 
 const struct cmd_table *cmd_table[] = {
+	&cmd_help_table,
 	&cmd_sdl,
 	&cmd_run,
 	&cmd_tap,
@@ -35,6 +37,16 @@ const struct cmd_table *cmd_table[] = {
 	&cmd_screencast,
 	&cmd_screenshot,
 };
+
+static void cmd__print_command_list(void)
+{
+	fprintf(stderr, "Commands:\n");
+	for (size_t i = 0; i < CDT_ARRAY_COUNT(cmd_table); i++) {
+		if (cmd_table[i] != NULL) {
+			fprintf(stderr, "- %s\n", cmd_table[i]->cmd);
+		}
+	}
+}
 
 bool cmd_init(int argc, const char **argv, void **pw_out)
 {
@@ -50,12 +62,7 @@ bool cmd_init(int argc, const char **argv, void **pw_out)
 		fprintf(stderr, "  %s %s <CMD>\n",
 				argv[ARG_CDT], argv[ARG_DISPLAY]);
 		fprintf(stderr, "\n");
-		fprintf(stderr, "Commands:\n");
-		for (size_t i = 0; i < CDT_ARRAY_COUNT(cmd_table); i++) {
-			if (cmd_table[i] != NULL) {
-				fprintf(stderr, "- %s\n", cmd_table[i]->cmd);
-			}
-		}
+		cmd__print_command_list();
 		fprintf(stderr, "\n");
 		return false;
 	}
@@ -76,6 +83,46 @@ bool cmd_init(int argc, const char **argv, void **pw_out)
 	fprintf(stderr, "Unknown command: %s\n", argv[ARG_CMD]);
 
 	return false;
+}
+
+void cmd_help(int argc, const char **argv, const char *cmd)
+{
+	if (cmd_g.cmd == NULL) {
+		fprintf(stderr, "%s: cmd uninitialised!\n", __func__);
+		return;
+	}
+
+	if (cmd == NULL) {
+		enum {
+			ARG_CDT,
+			ARG_DISPLAY,
+			ARG_CMD,
+			ARG__COUNT,
+		};
+		if (argc < ARG__COUNT) {
+			cmd = "help";
+		} else {
+			cmd = argv[ARG_CMD];
+		}
+	}
+
+	for (size_t i = 0; i < CDT_ARRAY_COUNT(cmd_table); i++) {
+		if (cmd_table[i] != NULL) {
+			if (strcmp(cmd, cmd_table[i]->cmd) == 0) {
+				cmd_g.cmd = cmd_table[i];
+				if (cmd_table[i]->help != NULL) {
+					cmd_table[i]->help(argc, argv);
+				}
+				return;
+			}
+		}
+	}
+
+	fprintf(stderr, "Unknown command: %s\n", cmd);
+
+	fprintf(stderr, "\n");
+	cmd__print_command_list();
+	fprintf(stderr, "\n");
 }
 
 void cmd_msg(void *pw, int id, const char *msg, size_t len)

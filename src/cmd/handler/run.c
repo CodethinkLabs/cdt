@@ -6,12 +6,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdbool.h>
 
 #include "cmd/cmd.h"
 #include "cmd/private.h"
 
 #include "msg/msg.h"
+#include "util/util.h"
 
 static bool cmd_run_init(int argc, const char **argv, void **pw_out)
 {
@@ -24,14 +26,8 @@ static bool cmd_run_init(int argc, const char **argv, void **pw_out)
 		ARG__COUNT,
 	};
 
-	if (argc < ARG__COUNT) {
-		fprintf(stderr, "Usage:\n");
-		fprintf(stderr, "  %s %s %s <SCRIPT>\n",
-				argv[ARG_CDT],
-				argv[ARG_DISPLAY],
-				argv[ARG_RUN]);
-		fprintf(stderr, "\n");
-		fprintf(stderr, "SCRIPT     -- JSON-escaped JavaScript\n");
+	if (argc != ARG__COUNT) {
+		cmd_help(argc, argv, NULL);
 		return false;
 	}
 
@@ -57,8 +53,31 @@ static void cmd_run_msg(void *pw, int id, const char *msg, size_t len)
 			id, (int)len, msg);
 }
 
+static void cmd_run_help(int argc, const char **argv);
+
 const struct cmd_table cmd_run = {
 	.cmd  = "run",
 	.init = cmd_run_init,
+	.help = cmd_run_help,
 	.msg  = cmd_run_msg,
 };
+
+static void cmd_run_help(int argc, const char **argv)
+{
+	enum {
+		ARG_CDT,
+		ARG_DISPLAY,
+		ARG__COUNT,
+	};
+
+	CDT_UNUSED(argc);
+
+	fprintf(stderr, "Usage:\n");
+	fprintf(stderr, "  %s %s %s <SCRIPT>\n",
+			argv[ARG_CDT],
+			argv[ARG_DISPLAY],
+			cmd_run.cmd);
+	fprintf(stderr, "\n");
+	fprintf(stderr, "Parameters:\n");
+	fprintf(stderr, "  SCRIPT     -- JSON-escaped JavaScript\n");
+}
