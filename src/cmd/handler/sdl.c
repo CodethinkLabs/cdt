@@ -41,6 +41,8 @@ static struct cmd_sdl_ctx {
 	int device_h;
 	int device_scale;
 
+	bool pressed; /* Whether touch/mouse is pressed. */
+
 } cmd_sdl_g = {
 	.window_w = 800,
 	.window_h = 600,
@@ -353,7 +355,9 @@ static void cmd_sdl__tap(struct cmd_sdl_ctx *ctx, int x, int y)
 
 	msg_queue_for_send(&(const struct msg)
 		{
-			.type = MSG_TYPE_TOUCH_EVENT_START,
+			.type = ctx->pressed ?
+					MSG_TYPE_TOUCH_EVENT_MOVE :
+					MSG_TYPE_TOUCH_EVENT_START,
 			.data = {
 				.touch_event = {
 					.x = screen_x * scale / FP_SCALE,
@@ -391,6 +395,7 @@ static bool cmd_sdl__handle_input(struct cmd_sdl_ctx *ctx)
 			break;
 
 		case SDL_MOUSEBUTTONUP:
+			ctx->pressed = false;
 			msg_queue_for_send(&(const struct msg) {
 					.type = MSG_TYPE_TOUCH_EVENT_END,
 				}, &id);
@@ -398,6 +403,15 @@ static bool cmd_sdl__handle_input(struct cmd_sdl_ctx *ctx)
 
 		case SDL_MOUSEBUTTONDOWN:
 			cmd_sdl__tap(ctx, event.button.x, event.button.y);
+			ctx->pressed = true;
+			break;
+
+		case SDL_MOUSEMOTION:
+			if (ctx->pressed) {
+				cmd_sdl__tap(ctx,
+						event.button.x,
+						event.button.y);
+			}
 			break;
 
 		default:
