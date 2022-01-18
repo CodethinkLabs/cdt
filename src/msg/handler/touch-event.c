@@ -24,6 +24,18 @@
 		"}" \
 	"}"
 
+#define PRINT_FMT_TOUCH_EVENT_MOVE__ID_X_Y \
+	"{" \
+		"\"id\":%i," \
+		"\"method\":\"Input.dispatchTouchEvent\"," \
+		"\"params\":{" \
+			"\"type\":\"touchMove\"," \
+			"\"touchPoints\":[" \
+				"{\"x\":%i,\"y\":%i}" \
+			"]" \
+		"}" \
+	"}"
+
 #define PRINT_FMT_TOUCH_EVENT_END__ID \
 	"{" \
 		"\"id\":%i," \
@@ -43,6 +55,16 @@ char *msg_str_touch_event(const struct msg *msg, int id)
 		if (!msg_create(&m,
 				PRINT_FMT_TOUCH_EVENT_END__ID,
 				id)) {
+			return NULL;
+		}
+		break;
+
+	case MSG_TYPE_TOUCH_EVENT_MOVE:
+		if (!msg_create(&m,
+				PRINT_FMT_TOUCH_EVENT_MOVE__ID_X_Y,
+				id,
+				msg->data.touch_event.x,
+				msg->data.touch_event.y)) {
 			return NULL;
 		}
 		break;
