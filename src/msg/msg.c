@@ -89,6 +89,7 @@ bool msg_to_msg_str(const struct msg *msg, char **msg_str, int *id_out)
 		[MSG_TYPE_TOUCH_EVENT_END]      = msg_str_touch_event,
 		[MSG_TYPE_TOUCH_EVENT_MOVE]     = msg_str_touch_event,
 		[MSG_TYPE_TOUCH_EVENT_START]    = msg_str_touch_event,
+		[MSG_TYPE_SCROLL_GESTURE]       = msg_str_scroll_gesture,
 		[MSG_TYPE_START_SCREENCAST]     = msg_str_start_screencast,
 		[MSG_TYPE_CAPTURE_SCREENSHOT]   = msg_str_capture_screenshot,
 		[MSG_TYPE_SCREENCAST_FRAME_ACK] = msg_str_screencast_frame_ack,

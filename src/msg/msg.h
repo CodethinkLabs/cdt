@@ -13,6 +13,7 @@ struct msg {
 		MSG_TYPE_CAPTURE_SCREENSHOT,
 		MSG_TYPE_START_SCREENCAST,
 		MSG_TYPE_STOP_SCREENCAST,
+		MSG_TYPE_SCROLL_GESTURE,
 		MSG_TYPE_TOUCH_EVENT_START,
 		MSG_TYPE_TOUCH_EVENT_MOVE,
 		MSG_TYPE_TOUCH_EVENT_END,
@@ -28,6 +29,13 @@ struct msg {
 			int x;
 			int y;
 		} touch_event;
+		struct {
+			int x;
+			int y;
+			int speed;
+			int x_dist;
+			int y_dist;
+		} scroll_gesture;
 		struct {
 			const char *format;
 		} capture_screenshot;
