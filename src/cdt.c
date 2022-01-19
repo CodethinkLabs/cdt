@@ -239,6 +239,15 @@ static void sigint_handler(int sig)
 	cdt_g.interrupted = true;
 }
 
+static bool cdt_tick_cmd(void *cmd_pw)
+{
+	if (msg_queue_get_send()->head != NULL) {
+		return true;
+	}
+
+	return cmd_tick(cmd_pw);
+}
+
 static void cdt_run(struct lws_context *context)
 {
 	struct lws_client_connect_info ccinfo = {
@@ -255,7 +264,7 @@ static void cdt_run(struct lws_context *context)
 
 	while (cdt_g.interrupted == false && cdt_g.web_socket != NULL) {
 		int ret;
-		bool cmd_continue = cmd_tick(cdt_g.cmd_pw);
+		bool cmd_continue = cdt_tick_cmd(cdt_g.cmd_pw);
 		bool need_send = msg_queue_get_send()->head != NULL;
 		bool need_resp = msg_queue_get_sent()->head != NULL;
 
