@@ -272,10 +272,7 @@ static void cdt_run(struct lws_context *context)
 			break;
 		}
 
-		if (need_send) {
-			lws_callback_on_writable(cdt_g.web_socket);
-		}
-
+		lws_callback_on_writable(cdt_g.web_socket);
 		ret = lws_service(context, 250);
 		if (ret < 0) {
 			break;
