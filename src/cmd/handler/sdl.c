@@ -41,7 +41,14 @@ static struct cmd_sdl_ctx {
 	int device_h;
 	int device_scale;
 
-	bool pressed; /* Whether touch/mouse is pressed. */
+	struct {
+		bool pressed; /* Whether touch/mouse is pressed. */
+		int x_sent;
+		int y_sent;
+		int x_last;
+		int y_last;
+		int count;
+	} mouse;
 
 } cmd_sdl_g = {
 	.window_w = 800,
@@ -342,25 +349,57 @@ static void cmd_sdl__resize(struct cmd_sdl_ctx *ctx, int w, int h)
 	cmd_sdl__update_frame_rect(ctx);
 }
 
+#define CMD_SDL_MOTION_RATE_LIMIT 4
+
 static void cmd_sdl__tap(struct cmd_sdl_ctx *ctx, int x, int y)
 {
 	int id;
 	int scale = ctx->device_scale;
-	int screen_x = x - ctx->frame_rect.x;
-	int screen_y = y - ctx->frame_rect.y;
+	int frame_x = ctx->frame_rect.x;
+	int frame_y = ctx->frame_rect.y;
+
+	if (ctx->mouse.pressed) {
+		if (ctx->mouse.x_sent == x &&
+		    ctx->mouse.y_sent == y) {
+			return;
+		}
+
+		/* Rate limit move events. */
+		if (ctx->mouse.count++ < CMD_SDL_MOTION_RATE_LIMIT) {
+			ctx->mouse.x_last = x;
+			ctx->mouse.y_last = y;
+			return;
+		} else {
+			ctx->mouse.count = 0;
+		}
+	}
 
 	msg_queue_for_send(&(const struct msg)
 		{
-			.type = ctx->pressed ?
+			.type = ctx->mouse.pressed ?
 					MSG_TYPE_TOUCH_EVENT_MOVE :
 					MSG_TYPE_TOUCH_EVENT_START,
 			.data = {
 				.touch_event = {
-					.x = screen_x * scale / FP_SCALE,
-					.y = screen_y * scale / FP_SCALE,
+					.x = (x - frame_x) * scale / FP_SCALE,
+					.y = (y - frame_y) * scale / FP_SCALE,
 				},
 			},
 		}, &id);
+
+	ctx->mouse.x_sent = x;
+	ctx->mouse.y_sent = y;
+}
+
+static void cmd_sdl__flush_motion(struct cmd_sdl_ctx *ctx)
+{
+	if (ctx->mouse.pressed && ctx->mouse.count > 0) {
+		if (ctx->mouse.x_sent != ctx->mouse.x_last ||
+		    ctx->mouse.y_sent != ctx->mouse.y_last) {
+			ctx->mouse.count = CMD_SDL_MOTION_RATE_LIMIT;
+			cmd_sdl__tap(ctx, ctx->mouse.x_last, ctx->mouse.y_last);
+		}
+	}
 }
 
 static bool cmd_sdl__handle_input(struct cmd_sdl_ctx *ctx)
@@ -391,7 +430,9 @@ static bool cmd_sdl__handle_input(struct cmd_sdl_ctx *ctx)
 			break;
 
 		case SDL_MOUSEBUTTONUP:
-			ctx->pressed = false;
+			cmd_sdl__tap(ctx, event.button.x, event.button.y);
+			cmd_sdl__flush_motion(ctx);
+			ctx->mouse.pressed = false;
 			msg_queue_for_send(&(const struct msg) {
 					.type = MSG_TYPE_TOUCH_EVENT_END,
 				}, &id);
@@ -399,11 +440,11 @@ static bool cmd_sdl__handle_input(struct cmd_sdl_ctx *ctx)
 
 		case SDL_MOUSEBUTTONDOWN:
 			cmd_sdl__tap(ctx, event.button.x, event.button.y);
-			ctx->pressed = true;
+			ctx->mouse.pressed = true;
 			break;
 
 		case SDL_MOUSEMOTION:
-			if (ctx->pressed) {
+			if (ctx->mouse.pressed) {
 				cmd_sdl__tap(ctx,
 						event.button.x,
 						event.button.y);
@@ -414,6 +455,8 @@ static bool cmd_sdl__handle_input(struct cmd_sdl_ctx *ctx)
 			break;
 		}
 	}
+
+	cmd_sdl__flush_motion(ctx);
 
 	return true;
 }
