@@ -13,9 +13,12 @@ jobs:
                pkg-config
                libsdl2-dev
                libyaml-dev
-               libcyaml-dev
                libsdl2-image-dev
                libwebsockets-dev
+    - name: install libcyaml
+      run: |
+           git clone https://github.com/tlsa/libcyaml.git &&
+           sudo make -C libcyaml install
     - name: build
       run: make
 
@@ -31,9 +34,12 @@ jobs:
                pkg-config
                libsdl2-dev
                libyaml-dev
-               libcyaml-dev
                libsdl2-image-dev
                libwebsockets-dev
+    - name: install libcyaml
+      run: |
+           git clone https://github.com/tlsa/libcyaml.git &&
+           sudo make -C libcyaml install
     - name: build
       run: make CC=clang
 
@@ -49,8 +55,11 @@ jobs:
                clang-tools
                libsdl2-dev
                libyaml-dev
-               libcyaml-dev
                libsdl2-image-dev
                libwebsockets-dev
+    - name: install libcyaml
+      run: |
+           git clone https://github.com/tlsa/libcyaml.git &&
+           sudo make -C libcyaml install
     - name: build
       run: scan-build make
