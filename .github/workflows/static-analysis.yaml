@@ -1,36 +1,25 @@
-name: CI
+name: "Static Analysis"
 on: [push]
 jobs:
-  linux-gcc:
+  codeql:
+    name: Analyze with CodeQL
     runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: apt-get install packages
-      run: sudo apt-get update -qq &&
-           sudo apt-get install --no-install-recommends -y
-               gcc
-               make
-               pkg-config
-               libsdl2-dev
-               libyaml-dev
-               libsdl2-image-dev
-               libwebsockets-dev
-    - name: install libcyaml
-      run: |
-           git clone https://github.com/tlsa/libcyaml.git &&
-           sudo make -C libcyaml install
-    - name: build
-      run: make
 
-  linux-clang:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['cpp']
+
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 1
+
     - name: apt-get install packages
       run: sudo apt-get update -qq &&
            sudo apt-get install --no-install-recommends -y
                make
-               clang
                pkg-config
                libsdl2-dev
                libyaml-dev
@@ -40,5 +29,51 @@ jobs:
       run: |
            git clone https://github.com/tlsa/libcyaml.git &&
            sudo make -C libcyaml install
-    - name: build
-      run: make CC=clang
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v1
+      with:
+        languages: ${{ matrix.language }}
+
+    - run: |
+       make
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v1
+
+  scan-build:
+    name: Analyze with scan-build
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['cpp']
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 1
+    - name: apt-get install packages
+      run: sudo apt-get update -qq &&
+           sudo apt-get install --no-install-recommends -y
+               make
+               pkg-config
+               clang-tools
+               libsdl2-dev
+               libyaml-dev
+               libsdl2-image-dev
+               libwebsockets-dev
+    - name: install libcyaml
+      run: |
+           git clone https://github.com/tlsa/libcyaml.git &&
+           sudo make -C libcyaml install
+    - name: scan-build
+      run: |
+       make clean
+       scan-build -sarif -o build/sarif make
+    - name: upload scan-build
+      uses: github/codeql-action/upload-sarif@v1
+      with:
+        sarif_file: build/sarif
