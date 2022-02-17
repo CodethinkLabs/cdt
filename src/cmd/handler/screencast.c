@@ -184,7 +184,7 @@ static void cmd_screencast_evt(void *pw, const char *method, size_t method_len,
 		}
 
 		file_write(scr, scr_len,
-				"screenshot-%s-%f.%s",
+				"screenshot-%s-%.6f.%s",
 				str_get_leaf(ctx->display),
 				scan.timestamp,
 				ctx->format);
