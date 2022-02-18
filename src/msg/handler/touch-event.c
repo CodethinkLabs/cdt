@@ -12,6 +12,8 @@
 #include "msg/queue.h"
 #include "msg/private.h"
 
+#include "util/log.h"
+
 #define PRINT_FMT_TOUCH_EVENT_START__ID_X_Y \
 	"{" \
 		"\"id\":%i," \
@@ -80,7 +82,7 @@ char *msg_str_touch_event(const struct msg *msg, int id)
 		break;
 
 	default:
-		fprintf(stderr, "%s: Unhandled message type: %i\n",
+		cdt_log(CDT_LOG_ERROR, "%s: Unhandled message type: %i",
 				__func__, msg->type);
 		return NULL;
 	}
