@@ -13,6 +13,8 @@
 #include "cmd/private.h"
 
 #include "msg/msg.h"
+
+#include "util/log.h"
 #include "util/util.h"
 
 static bool cmd_swipe_init(int argc, const char **argv, void **pw_out)
@@ -62,7 +64,7 @@ static void cmd_swipe_msg(void *pw, int id, const char *msg, size_t len)
 {
 	(void)(pw);
 
-	fprintf(stderr, "Received message with id %i: %*s\n",
+	cdt_log(CDT_LOG_NOTICE, "Received message with id %i: %*s",
 			id, (int)len, msg);
 }
 

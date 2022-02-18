@@ -17,6 +17,8 @@
 #include "cmd/private.h"
 
 #include "msg/msg.h"
+
+#include "util/log.h"
 #include "util/util.h"
 
 /* The log messages arrive as an array of arrays as a JSON string.
@@ -212,13 +214,13 @@ static bool cmd_run_log__handle_raw(struct run_log_ctx *ctx, const char *raw)
 			&value_schema,
 			(void **)&log, &log_count);
 	if (res != CYAML_OK) {
-		fprintf(stderr, "Failed to parse log lines: %s\n",
+		cdt_log(CDT_LOG_NOTICE, "Failed to parse log lines: %s",
 				cyaml_strerror(res));
 		return true;
 	}
 
 	if (ctx->log_count > log_count) {
-		fprintf(stderr, "Log tamper detected! Got %u, had %u\n",
+		cdt_log(CDT_LOG_WARNING, "Log tamper detected! Got %u, had %u",
 				log_count, ctx->log_count);
 		cyaml_free(&config, &value_schema, log, log_count);
 		return true;
@@ -227,7 +229,8 @@ static bool cmd_run_log__handle_raw(struct run_log_ctx *ctx, const char *raw)
 	for (unsigned i = 0; i < ctx->log_count; i++) {
 		if (log[i][0] != NULL && ctx->log[i][0] != NULL) {
 			if (strcmp(log[i][0], ctx->log[i][0]) != 0) {
-				fprintf(stderr, "Log tamper detected!\n");
+				cdt_log(CDT_LOG_WARNING,
+						"Log tamper detected!");
 				cyaml_free(&config, &value_schema,
 						log, log_count);
 				return true;
@@ -264,7 +267,7 @@ static void cmd_run_log_msg(void *pw, int id, const char *msg, size_t len)
 	struct run_log_ctx *ctx = pw;
 
 	if (id != ctx->id_fetch) {
-		fprintf(stderr, "Received message with id %i: %*s\n",
+		cdt_log(CDT_LOG_NOTICE, "Received message with id %i: %*s",
 				id, (int)len, msg);
 		return;
 
@@ -279,7 +282,8 @@ static void cmd_run_log_msg(void *pw, int id, const char *msg, size_t len)
 				&message_response_schema,
 				(void **)&log_msg, NULL);
 		if (res != CYAML_OK) {
-			fprintf(stderr, "Failed to parse log message: %s\n",
+			cdt_log(CDT_LOG_ERROR,
+					"Failed to parse log message: %s",
 					cyaml_strerror(res));
 			return;
 		}

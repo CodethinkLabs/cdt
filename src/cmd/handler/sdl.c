@@ -18,6 +18,7 @@
 #include "msg/msg.h"
 #include "cmd/private.h"
 
+#include "util/log.h"
 #include "util/file.h"
 #include "util/util.h"
 #include "util/base64.h"
@@ -91,8 +92,7 @@ static bool cmd_sdl_init(int argc, const char **argv, void **pw_out)
 	}
 
 	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-		fprintf(stderr, "SDL_Init Error: %s\n",
-				SDL_GetError());
+		cdt_log(CDT_LOG_ERROR, "SDL_Init Error: %s", SDL_GetError());
 		goto error;
 	}
 
@@ -102,7 +102,7 @@ static bool cmd_sdl_init(int argc, const char **argv, void **pw_out)
 			cmd_sdl_g.window_w, cmd_sdl_g.window_h,
 			SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 	if (cmd_sdl_g.win == NULL) {
-		fprintf(stderr, "SDL_CreateWindow Error: %s\n",
+		cdt_log(CDT_LOG_ERROR, "SDL_CreateWindow Error: %s",
 				SDL_GetError());
 		goto error;
 	}
@@ -111,18 +111,18 @@ static bool cmd_sdl_init(int argc, const char **argv, void **pw_out)
 			SDL_RENDERER_ACCELERATED |
 			SDL_RENDERER_PRESENTVSYNC);
 	if (cmd_sdl_g.ren == NULL) {
-		fprintf(stderr, "SDL_CreateRenderer Error: %s\n",
+		cdt_log(CDT_LOG_ERROR, "SDL_CreateRenderer Error: %s",
 				SDL_GetError());
 		goto error;
 	}
 
 	if (IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG) {
-		fprintf(stderr, "IMG_Init Error: %s\n", IMG_GetError());
+		cdt_log(CDT_LOG_ERROR, "IMG_Init Error: %s", IMG_GetError());
 		goto error;
 	}
 
 	if (IMG_Init(IMG_INIT_JPG) != IMG_INIT_JPG) {
-		fprintf(stderr, "IMG_Init Error: %s\n", IMG_GetError());
+		cdt_log(CDT_LOG_ERROR, "IMG_Init Error: %s", IMG_GetError());
 		goto error;
 	}
 
@@ -226,7 +226,7 @@ static void cmd_sdl__handle_frame(struct cmd_sdl_ctx *ctx,
 
 	ops = SDL_RWFromMem(data, (int)len);
 	if (ops == NULL) {
-		fprintf(stderr, "SDL_RWFromMem Error: %s\n",
+		cdt_log(CDT_LOG_ERROR, "SDL_RWFromMem Error: %s",
 				SDL_GetError());
 		return;
 	}
@@ -234,7 +234,7 @@ static void cmd_sdl__handle_frame(struct cmd_sdl_ctx *ctx,
 	surface = IMG_Load_RW(ops, 0);
 	SDL_RWclose(ops);
 	if (surface == NULL) {
-		fprintf(stderr, "IMG_Load_RW Error: %s\n", IMG_GetError());
+		cdt_log(CDT_LOG_ERROR, "IMG_Load_RW Error: %s", IMG_GetError());
 		return;
 	}
 
@@ -244,7 +244,7 @@ static void cmd_sdl__handle_frame(struct cmd_sdl_ctx *ctx,
 	texture = SDL_CreateTextureFromSurface(ctx->ren, surface);
 	SDL_FreeSurface(surface);
 	if (texture == NULL) {
-		fprintf(stderr, "SDL_CreateTextureFromSurface Error: %s\n",
+		cdt_log(CDT_LOG_ERROR, "SDL_CreateTextureFromSurface Error: %s",
 				SDL_GetError());
 		return;
 	}
@@ -308,13 +308,15 @@ static void cmd_sdl_evt(void *pw, const char *method, size_t method_len,
 		if (!msg_str_scan(msg, len,
 				spec, CDT_ARRAY_COUNT(spec),
 				cmd_sdl_msg_scan_cb, &scan)) {
-			fprintf(stderr, "%s: Failed to scan message: %*s\n",
+			cdt_log(CDT_LOG_ERROR,
+					"%s: Failed to scan message: %*s",
 					__func__, (int)method_len, method);
 			return;
 		}
 
 		if (scan.found != FOUND_MASK) {
-			fprintf(stderr, "%s: Message missing components: %*s\n",
+			cdt_log(CDT_LOG_ERROR,
+					"%s: Message missing components: %*s",
 					__func__, (int)method_len, method);
 			return;
 		}
@@ -333,7 +335,8 @@ static void cmd_sdl_evt(void *pw, const char *method, size_t method_len,
 				scan.data,
 				scan.data_len,
 				&scr, &scr_len)) {
-			fprintf(stderr, "%s: Base64 decode failed\n", __func__);
+			cdt_log(CDT_LOG_ERROR, "%s: Base64 decode failed",
+					__func__);
 			return;
 		}
 
@@ -372,6 +375,10 @@ static void cmd_sdl__tap(struct cmd_sdl_ctx *ctx, int x, int y)
 		} else {
 			ctx->mouse.count = 0;
 		}
+	} else {
+		cdt_log(CDT_LOG_NOTICE, "Pressed at (%i, %i)",
+				(x - frame_x) * scale / FP_SCALE,
+				(y - frame_y) * scale / FP_SCALE);
 	}
 
 	msg_queue_for_send(&(const struct msg)

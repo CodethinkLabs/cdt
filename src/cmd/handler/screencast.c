@@ -17,6 +17,7 @@
 #include "msg/msg.h"
 #include "cmd/private.h"
 
+#include "util/log.h"
 #include "util/file.h"
 #include "util/util.h"
 #include "util/base64.h"
@@ -73,7 +74,7 @@ static void cmd_screencast_msg(void *pw, int id, const char *msg, size_t len)
 {
 	(void)(pw);
 
-	fprintf(stderr, "Received response with id %i: %.*s\n",
+	cdt_log(CDT_LOG_NOTICE, "Received response with id %i: %.*s",
 			id, (int)len, msg);
 }
 
@@ -119,7 +120,7 @@ static void cmd_screencast_evt(void *pw, const char *method, size_t method_len,
 {
 	struct cmd_screencast_ctx *ctx = pw;
 
-	fprintf(stderr, "Received event with method: %.*s\n",
+	cdt_log(CDT_LOG_NOTICE, "Received event with method: %.*s",
 			(int)method_len, method);
 
 	if (strncmp(method, "Page.screencastFrame", method_len) == 0) {
@@ -154,13 +155,15 @@ static void cmd_screencast_evt(void *pw, const char *method, size_t method_len,
 		if (!msg_str_scan(msg, len,
 				spec, CDT_ARRAY_COUNT(spec),
 				cmd_screencast_msg_scan_cb, &scan)) {
-			fprintf(stderr, "%s: Failed to scan message: %*s\n",
+			cdt_log(CDT_LOG_ERROR,
+					"%s: Failed to scan message: %*s",
 					__func__, (int)method_len, method);
 			return;
 		}
 
 		if (scan.found != FOUND_MASK) {
-			fprintf(stderr, "%s: Message missing components: %*s\n",
+			cdt_log(CDT_LOG_ERROR,
+					"%s: Message missing components: %*s",
 					__func__, (int)method_len, method);
 			return;
 		}
@@ -179,7 +182,8 @@ static void cmd_screencast_evt(void *pw, const char *method, size_t method_len,
 				scan.data,
 				scan.data_len,
 				&scr, &scr_len)) {
-			fprintf(stderr, "%s: Base64 decode failed\n", __func__);
+			cdt_log(CDT_LOG_ERROR, "%s: Base64 decode failed",
+					__func__);
 			return;
 		}
 

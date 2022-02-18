@@ -14,6 +14,8 @@
 #include "cmd/private.h"
 
 #include "msg/msg.h"
+
+#include "util/log.h"
 #include "util/file.h"
 #include "util/util.h"
 #include "util/base64.h"
@@ -71,7 +73,7 @@ static bool get_data(const char *msg, size_t len,
 
 	data = strstr(msg, marker);
 	if (data == NULL) {
-		fprintf(stderr, "%s: Data not found: %*s\n",
+		cdt_log(CDT_LOG_ERROR, "%s: Data not found: %*s",
 				__func__, (int)len, msg);
 		return false;
 	}
@@ -79,7 +81,7 @@ static bool get_data(const char *msg, size_t len,
 	data += strlen(marker);
 	end = strchr(data, '"');
 	if (end == NULL || end < data) {
-		fprintf(stderr, "%s: Data terminator missing: %*s\n",
+		cdt_log(CDT_LOG_ERROR, "%s: Data terminator missing: %*s",
 				__func__, (int)len, msg);
 		return false;
 	}
@@ -105,14 +107,14 @@ static void cmd_screenshot_msg(void *pw, int id, const char *msg, size_t len)
 	}
 
 	if (data_len == 0) {
-		fprintf(stderr, "%s: Zero length screenshot: %*s\n",
+		cdt_log(CDT_LOG_ERROR, "%s: Zero length screenshot: %*s",
 				__func__, (int)len, msg);
 		ctx->finished = true;
 		return;
 	}
 
 	if (!base64_decode(data, data_len, &scr, &scr_len)) {
-		fprintf(stderr, "%s: Base64 decode failed\n", __func__);
+		cdt_log(CDT_LOG_ERROR, "%s: Base64 decode failed", __func__);
 		ctx->finished = true;
 		return;
 	}

@@ -12,6 +12,7 @@
 #include "cmd/cmd.h"
 #include "cmd/private.h"
 
+#include "util/log.h"
 #include "util/util.h"
 
 static struct {
@@ -80,7 +81,7 @@ bool cmd_init(int argc, const char **argv, void **pw_out)
 		}
 	}
 
-	fprintf(stderr, "Unknown command: %s\n", argv[ARG_CMD]);
+	cdt_log(CDT_LOG_ERROR, "Unknown command: %s", argv[ARG_CMD]);
 
 	return false;
 }
@@ -88,7 +89,7 @@ bool cmd_init(int argc, const char **argv, void **pw_out)
 void cmd_help(int argc, const char **argv, const char *cmd)
 {
 	if (cmd_g.cmd == NULL) {
-		fprintf(stderr, "%s: cmd uninitialised!\n", __func__);
+		cdt_log(CDT_LOG_ERROR, "%s: cmd uninitialised!", __func__);
 		return;
 	}
 
@@ -118,7 +119,7 @@ void cmd_help(int argc, const char **argv, const char *cmd)
 		}
 	}
 
-	fprintf(stderr, "Unknown command: %s\n", cmd);
+	cdt_log(CDT_LOG_ERROR, "Unknown command: %s", cmd);
 
 	fprintf(stderr, "\n");
 	cmd__print_command_list();
@@ -128,7 +129,7 @@ void cmd_help(int argc, const char **argv, const char *cmd)
 void cmd_msg(void *pw, int id, const char *msg, size_t len)
 {
 	if (cmd_g.cmd == NULL) {
-		fprintf(stderr, "%s: cmd uninitialised!\n", __func__);
+		cdt_log(CDT_LOG_ERROR, "%s: cmd uninitialised!", __func__);
 		return;
 	}
 
@@ -141,7 +142,7 @@ void cmd_evt(void *pw, const char *method, size_t method_len,
 		const char *msg, size_t len)
 {
 	if (cmd_g.cmd == NULL) {
-		fprintf(stderr, "%s: cmd uninitialised!\n", __func__);
+		cdt_log(CDT_LOG_ERROR, "%s: cmd uninitialised!", __func__);
 		return;
 	}
 
@@ -153,7 +154,7 @@ void cmd_evt(void *pw, const char *method, size_t method_len,
 bool cmd_tick(void *pw)
 {
 	if (cmd_g.cmd == NULL) {
-		fprintf(stderr, "%s: cmd uninitialised!\n", __func__);
+		cdt_log(CDT_LOG_ERROR, "%s: cmd uninitialised!", __func__);
 		return false;
 	}
 
@@ -167,7 +168,7 @@ bool cmd_tick(void *pw)
 void cmd_fini(void *pw)
 {
 	if (cmd_g.cmd == NULL) {
-		fprintf(stderr, "%s: cmd uninitialised!\n", __func__);
+		cdt_log(CDT_LOG_ERROR, "%s: cmd uninitialised!", __func__);
 		return;
 	}
 
