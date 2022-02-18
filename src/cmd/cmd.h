@@ -19,6 +19,8 @@
 /** Common parameters. */
 struct cmd_options {
 	const char *display;
+	const char *host;
+	int64_t port;
 	int64_t log_level;
 	int64_t log_target;
 };

@@ -212,14 +212,16 @@ static bool cdt_tick_cmd(void *cmd_pw)
 }
 
 static void cdt_run(struct lws_context *context,
-		const char *path)
+		const char *path,
+		const char *host,
+		int port)
 {
 	struct lws_client_connect_info ccinfo = {
-		.port = 9222,
-		.context = context,
+		.port = port,
 		.path = path,
+		.address = host,
 		.origin = "origin",
-		.address = "localhost",
+		.context = context,
 		.host = lws_canonical_hostname(context),
 		.protocol = protocols[PROTOCOL_DEVTOOLS].name,
 	};
@@ -250,10 +252,13 @@ static void cdt_run(struct lws_context *context,
 }
 
 static bool setup(int argc, const char **argv,
-		const char **display)
+		const char **display,
+		const char **host,
+		int *port)
 {
 	struct cmd_options options = {
-		.display = NULL,
+		.port = 9222,
+		.host = "localhost",
 		.log_level = CDT_LOG_NOTICE,
 		.log_target = CDT_LOG_STDERR,
 	};
@@ -267,6 +272,8 @@ static bool setup(int argc, const char **argv,
 	cdt_log_set_target(options.log_target);
 
 	*display = options.display;
+	*port = (int)options.port;
+	*host = options.host;
 	return true;
 }
 
@@ -278,18 +285,20 @@ int main(int argc, const char *argv[])
 		.protocols = protocols,
 	};
 	const char *display;
+	const char *host;
 	char *path;
+	int port;
 
 	signal(SIGINT, sigint_handler);
 
 	lws_set_log_level(LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE,
 			lwsl_emit_syslog);
 
-	if (!setup(argc, argv, &display)) {
+	if (!setup(argc, argv, &display, &host, &port)) {
 		return EXIT_FAILURE;
 	}
 
-	path = display_get_path(display);
+	path = display_get_path(display, host, port);
 	if (path == NULL) {
 		cdt_log(CDT_LOG_ERROR, "Invalid display: %s", display);
 		return EXIT_FAILURE;
@@ -303,7 +312,7 @@ int main(int argc, const char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	cdt_run(context, path);
+	cdt_run(context, path, host, port);
 	lws_context_destroy(context);
 	free(path);
 

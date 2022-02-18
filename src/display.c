@@ -175,7 +175,7 @@ static bool display_parse(const uint8_t *data, size_t len)
 	return true;
 }
 
-static bool display_init(void)
+static bool display_init(const char *host, int port)
 {
 	bool parsed;
 	struct lws_context *context;
@@ -186,8 +186,8 @@ static bool display_init(void)
 		.uid = -1,
 	};
 	struct lws_client_connect_info i = {
-		.address = "localhost",
-		.port = 9222,
+		.port = port,
+		.address = host,
 		.path = "/json",
 		.method = "GET",
 		.host = i.address,
@@ -233,7 +233,7 @@ static void display_fini(void)
 	display__free_displays();
 }
 
-char *display_get_path(const char *display)
+char *display_get_path(const char *display, const char *host, int port)
 {
 	char *path = NULL;
 
@@ -241,7 +241,7 @@ char *display_get_path(const char *display)
 		path = strdup(display);
 
 	} else {
-		if (!display_init()) {
+		if (!display_init(host, port)) {
 			return NULL;
 		}
 

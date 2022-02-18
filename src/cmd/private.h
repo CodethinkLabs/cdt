@@ -72,6 +72,22 @@ static const struct cli_str_val cmd_cli_common_log_target[] = {
 		.v.e.e = &cmd_options.log_target, \
 		.v.e.desc = cmd_cli_common_log_target, \
 		.d = "Logging target (stdout, stderr, syslog)." \
+	}, \
+	{ \
+		.s = 'p', \
+		.l = "port", \
+		.t = CLI_INT, \
+		.v.i = &cmd_options.port, \
+		.d = "Port for Chrome DevTools websocket connection. " \
+		     "Defaults to '9222'." \
+	}, \
+	{ \
+		.s = 'h', \
+		.l = "host", \
+		.t = CLI_STRING, \
+		.v.s = &cmd_options.host, \
+		.d = "Hostname for Chrome DevTools websocket connection. " \
+		     "Defaults to 'localhost'." \
 	}
 
 static inline bool cmd_cli_parse(int argc, const char **argv,
