@@ -195,7 +195,7 @@ static void cmd_screencast_evt(void *pw, const char *method, size_t method_len,
 static bool cmd_screencast_tick(void *pw)
 {
 	(void)(pw);
-	usleep(1000 * 100);
+	usleep(1000 * 10);
 	return true;
 }
 
