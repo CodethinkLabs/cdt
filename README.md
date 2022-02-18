@@ -23,7 +23,7 @@ That should build the executable, `cdt`.
 Using
 -----
 
-At the moment the `cdt` tool expects to find a Chrome DevTools Protocol server at the fixed address of `localhost:9222`. To connect to a remote server I have used SSH port forwarding.
+By default the `cdt` tool expects to find a Chrome DevTools Protocol server at `localhost:9222`. This can be overridden with command line options. To connect to a remote server I have used SSH port forwarding.
 
 ```
 Usage:
