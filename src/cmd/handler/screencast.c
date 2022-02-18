@@ -17,6 +17,7 @@
 #include "msg/msg.h"
 #include "cmd/private.h"
 
+#include "util/cli.h"
 #include "util/log.h"
 #include "util/file.h"
 #include "util/util.h"
@@ -25,46 +26,62 @@
 static struct cmd_screencast_ctx {
 	const char *display;
 	const char *format;
-} cmd_screencast_g;
+	uint64_t max_size;
+} cmd_screencast_g = {
+	.format = "jpeg",
+};
 
-static bool cmd_screencast_init(int argc, const char **argv, void **pw_out)
+static const struct cli_table_entry cli_entries[] = {
+	{
+		.p = true,
+		.l = "screencast",
+		.t = CLI_CMD,
+	},
+	{
+		.p = true,
+		.l = "DISPLAY",
+		.t = CLI_STRING,
+		.v.s = &cmd_screencast_g.display,
+		.d = "Identifier for browser context to connect to."
+	},
+	{
+		.s = 's',
+		.l = "max-size",
+		.t = CLI_UINT,
+		.v.u = &cmd_screencast_g.max_size,
+		.d = "Maximum x/y dimension in px."
+	},
+};
+static const struct cli_table cli = {
+	.entries = cli_entries,
+	.count = (sizeof(cli_entries))/(sizeof(*cli_entries)),
+	.min_positional = 2,
+};
+
+static bool cmd_screencast_init(int argc, const char **argv,
+		struct cmd_options *options, void **pw_out)
 {
 	int id;
-	int w = 0;
-	int h = 0;
-	const char *format = "jpeg";
-	enum {
-		ARG_CDT,
-		ARG_DISPLAY,
-		ARG_SCREENCAST,
-		ARG_MAX_SIZE,
-		ARG__COUNT,
-	};
 
-	if (argc < ARG_MAX_SIZE || argc > ARG__COUNT) {
-		cmd_help(argc, argv, NULL);
+	if (!cli_parse(&cli, argc, argv)) {
+		cdt_log(CDT_LOG_ERROR, "Failed to parse command line");
+		cmd_help(argc, argv, cli_entries[0].l);
 		return false;
 	}
 
-	if (argc > ARG_MAX_SIZE) {
-		w = atoi(argv[ARG_MAX_SIZE]);
-		h = atoi(argv[ARG_MAX_SIZE]);
-	}
+	options->display = cmd_screencast_g.display;
 
 	msg_queue_for_send(&(const struct msg)
 		{
 			.type = MSG_TYPE_START_SCREENCAST,
 			.data = {
 				.start_screencast = {
-					.max_width = w,
-					.max_height = h,
-					.format = format,
+					.max_width = (int)cmd_screencast_g.max_size,
+					.max_height = (int)cmd_screencast_g.max_size,
+					.format = cmd_screencast_g.format,
 				},
 			},
 		}, &id);
-
-	cmd_screencast_g.format = format;
-	cmd_screencast_g.display = argv[ARG_DISPLAY];
 
 	*pw_out = &cmd_screencast_g;
 	return true;
@@ -216,20 +233,5 @@ const struct cmd_table cmd_screencast = {
 
 static void cmd_screencast_help(int argc, const char **argv)
 {
-	enum {
-		ARG_CDT,
-		ARG_DISPLAY,
-		ARG__COUNT,
-	};
-
-	CDT_UNUSED(argc);
-
-	fprintf(stderr, "Usage:\n");
-	fprintf(stderr, "  %s %s %s [MAX_SIZE]\n",
-			argv[ARG_CDT],
-			argv[ARG_DISPLAY],
-			cmd_screencast.cmd);
-	fprintf(stderr, "\n");
-	fprintf(stderr, "Optional:\n");
-	fprintf(stderr, "  MAX_SIZE -- Maximum x/y dimension in px\n");
+	cli_help(&cli, (argc > 0) ? argv[0] : "cdt");
 }

@@ -14,44 +14,99 @@
 
 #include "msg/msg.h"
 
+#include "util/cli.h"
 #include "util/log.h"
 #include "util/util.h"
 
-static bool cmd_swipe_init(int argc, const char **argv, void **pw_out)
+static struct swipe_ctx {
+	int64_t x;
+	int64_t y;
+	int64_t speed;
+	int64_t x_dist;
+	int64_t y_dist;
+	const char *display;
+} swipe_ctx = {
+	.speed = 800,
+};
+
+static const struct cli_table_entry cli_entries[] = {
+	{
+		.p = true,
+		.l = "swipe",
+		.t = CLI_CMD,
+	},
+	{
+		.p = true,
+		.l = "DISPLAY",
+		.t = CLI_STRING,
+		.v.s = &swipe_ctx.display,
+		.d = "Identifier for browser context to connect to."
+	},
+	{
+		.p = true,
+		.l = "X",
+		.t = CLI_INT,
+		.v.i = &swipe_ctx.x,
+		.d = "X coordinate of start."
+	},
+	{
+		.p = true,
+		.l = "Y",
+		.t = CLI_INT,
+		.v.i = &swipe_ctx.y,
+		.d = "Y coordinate of start."
+	},
+	{
+		.p = true,
+		.l = "X_DIST",
+		.t = CLI_INT,
+		.v.i = &swipe_ctx.x_dist,
+		.d = "Scroll distance (X-axis)."
+	},
+	{
+		.p = true,
+		.l = "Y_DIST",
+		.t = CLI_INT,
+		.v.i = &swipe_ctx.y_dist,
+		.d = "Scroll distance (Y-axis)."
+	},
+	{
+		.s = 's',
+		.l = "speed",
+		.t = CLI_INT,
+		.v.i = &swipe_ctx.speed,
+		.d = "Pixels per second. (Default: 800)."
+	},
+};
+static const struct cli_table cli = {
+	.entries = cli_entries,
+	.count = (sizeof(cli_entries))/(sizeof(*cli_entries)),
+	.min_positional = 6,
+};
+
+static bool cmd_swipe_init(int argc, const char **argv,
+		struct cmd_options *options, void **pw_out)
 {
 	int id;
-	int speed = 800;
-	enum {
-		ARG_CDT,
-		ARG_DISPLAY,
-		ARG_SWIPE,
-		ARG_X,
-		ARG_Y,
-		ARG_X_DIST,
-		ARG_Y_DIST,
-		ARG_SPEED,
-		ARG__COUNT,
-	};
 
-	if (argc < ARG_SPEED || argc > ARG__COUNT) {
-		cmd_help(argc, argv, NULL);
+	if (!cli_parse(&cli, argc, argv)) {
+		cdt_log(CDT_LOG_ERROR, "Failed to parse command line");
+		cmd_help(argc, argv, cli_entries[0].l);
 		return false;
 	}
 
-	if (argc == ARG__COUNT) {
-		speed = atoi(argv[ARG_SPEED]);
-	}
+	options->display = swipe_ctx.display;
 
 	msg_queue_for_send(&(const struct msg)
 		{
 			.type = MSG_TYPE_SCROLL_GESTURE,
 			.data = {
 				.scroll_gesture = {
-					.speed = speed,
-					.x = atoi(argv[ARG_X]),
-					.y = atoi(argv[ARG_Y]),
-					.x_dist = atoi(argv[ARG_X_DIST]),
-					.y_dist = atoi(argv[ARG_Y_DIST]),
+					.x = (int)swipe_ctx.x,
+					.y = (int)swipe_ctx.y,
+					.speed = (int)swipe_ctx.speed,
+					.x_dist = (int)swipe_ctx.x_dist,
+					.y_dist = (int)swipe_ctx.y_dist,
 				},
 			},
 		}, &id);
@@ -79,26 +134,5 @@ const struct cmd_table cmd_swipe = {
 
 static void cmd_swipe_help(int argc, const char **argv)
 {
-	enum {
-		ARG_CDT,
-		ARG_DISPLAY,
-		ARG__COUNT,
-	};
-
-	CDT_UNUSED(argc);
-
-	fprintf(stderr, "Usage:\n");
-	fprintf(stderr, "  %s %s %s <X> <Y> <X_DIST> <Y_DIST> [SPEED]\n",
-			argv[ARG_CDT],
-			argv[ARG_DISPLAY],
-			cmd_swipe.cmd);
-	fprintf(stderr, "\n");
-	fprintf(stderr, "Parameters:\n");
-	fprintf(stderr, "  X      -- X coordinate of start\n");
-	fprintf(stderr, "  Y      -- Y coordinate of start\n");
-	fprintf(stderr, "  X_DIST -- Scroll distance (X-axis)\n");
-	fprintf(stderr, "  Y_DIST -- Scroll distance (Y-axis)\n");
-	fprintf(stderr, "\n");
-	fprintf(stderr, "Optional:\n");
-	fprintf(stderr, "  SPEED  -- Pixels per second. (Default: 800)\n");
+	cli_help(&cli, (argc > 0) ? argv[0] : "cdt");
 }

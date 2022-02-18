@@ -39,7 +39,7 @@ const struct cmd_table *cmd_table[] = {
 	&cmd_screenshot,
 };
 
-static void cmd__print_command_list(void)
+void cmd_print_command_list(void)
 {
 	fprintf(stderr, "Commands:\n");
 	for (size_t i = 0; i < CDT_ARRAY_COUNT(cmd_table); i++) {
@@ -49,21 +49,20 @@ static void cmd__print_command_list(void)
 	}
 }
 
-bool cmd_init(int argc, const char **argv, void **pw_out)
+bool cmd_init(int argc, const char **argv,
+		struct cmd_options *options, void **pw_out)
 {
 	enum {
 		ARG_CDT,
-		ARG_DISPLAY,
 		ARG_CMD,
 		ARG__COUNT,
 	};
 
 	if (argc < ARG__COUNT) {
 		fprintf(stderr, "Usage:\n");
-		fprintf(stderr, "  %s %s <CMD>\n",
-				argv[ARG_CDT], argv[ARG_DISPLAY]);
+		fprintf(stderr, "  %s <CMD>\n", argv[ARG_CDT]);
 		fprintf(stderr, "\n");
-		cmd__print_command_list();
+		cmd_print_command_list();
 		fprintf(stderr, "\n");
 		return false;
 	}
@@ -74,7 +73,7 @@ bool cmd_init(int argc, const char **argv, void **pw_out)
 				cmd_g.cmd = cmd_table[i];
 				if (cmd_table[i]->init != NULL) {
 					return cmd_table[i]->init(argc, argv,
-							pw_out);
+							options, pw_out);
 				}
 				return true;
 			}
@@ -82,6 +81,10 @@ bool cmd_init(int argc, const char **argv, void **pw_out)
 	}
 
 	cdt_log(CDT_LOG_ERROR, "Unknown command: %s", argv[ARG_CMD]);
+
+	fprintf(stderr, "\n");
+	cmd_print_command_list();
+	fprintf(stderr, "\n");
 
 	return false;
 }
@@ -122,7 +125,7 @@ void cmd_help(int argc, const char **argv, const char *cmd)
 	cdt_log(CDT_LOG_ERROR, "Unknown command: %s", cmd);
 
 	fprintf(stderr, "\n");
-	cmd__print_command_list();
+	cmd_print_command_list();
 	fprintf(stderr, "\n");
 }
 

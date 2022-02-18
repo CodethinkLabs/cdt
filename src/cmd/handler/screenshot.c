@@ -15,6 +15,7 @@
 
 #include "msg/msg.h"
 
+#include "util/cli.h"
 #include "util/log.h"
 #include "util/file.h"
 #include "util/util.h"
@@ -24,41 +25,60 @@ static struct cmd_screenshot_ctx {
 	const char *display;
 	const char *format;
 	bool finished;
-} cmd_screenshot_g;
+} cmd_screenshot_g = {
+	.format = "png",
+};
 
-static bool cmd_screenshot_init(int argc, const char **argv, void **pw_out)
+static const struct cli_table_entry cli_entries[] = {
+	{
+		.p = true,
+		.l = "screenshot",
+		.t = CLI_CMD,
+	},
+	{
+		.p = true,
+		.l = "DISPLAY",
+		.t = CLI_STRING,
+		.v.s = &cmd_screenshot_g.display,
+		.d = "Identifier for browser context to connect to."
+	},
+	{
+		.p = true,
+		.l = "FORMAT",
+		.t = CLI_STRING,
+		.v.s = &cmd_screenshot_g.format,
+		.d = "Image format: png, jpeg (default: png)."
+	},
+};
+static const struct cli_table cli = {
+	.entries = cli_entries,
+	.count = (sizeof(cli_entries))/(sizeof(*cli_entries)),
+	.min_positional = 2,
+};
+
+static bool cmd_screenshot_init(int argc, const char **argv,
+		struct cmd_options *options, void **pw_out)
 {
-	const char *fmt = "png";
 	int id;
-	enum {
-		ARG_CDT,
-		ARG_DISPLAY,
-		ARG_SCREENSHOT,
-		ARG_FMT,
-		ARG__COUNT,
-	};
 
-	if (argc < ARG_FMT || argc > ARG__COUNT) {
-		cmd_help(argc, argv, NULL);
+	if (!cli_parse(&cli, argc, argv)) {
+		cdt_log(CDT_LOG_ERROR, "Failed to parse command line");
+		cmd_help(argc, argv, cli_entries[0].l);
 		return false;
 	}
 
-	if (argc > ARG_FMT) {
-		fmt = argv[ARG_FMT];
-	}
+	options->display = cmd_screenshot_g.display;
 
 	msg_queue_for_send(&(const struct msg)
 		{
 			.type = MSG_TYPE_CAPTURE_SCREENSHOT,
 			.data = {
 				.capture_screenshot = {
-					.format = fmt,
+					.format = cmd_screenshot_g.format,
 				},
 			},
 		}, &id);
 
-	cmd_screenshot_g.format = fmt;
-	cmd_screenshot_g.display = argv[ARG_DISPLAY];
 	cmd_screenshot_g.finished = false;
 	*pw_out = &cmd_screenshot_g;
 	return true;
@@ -146,20 +166,5 @@ const struct cmd_table cmd_screenshot = {
 
 static void cmd_screenshot_help(int argc, const char **argv)
 {
-	enum {
-		ARG_CDT,
-		ARG_DISPLAY,
-		ARG__COUNT,
-	};
-
-	CDT_UNUSED(argc);
-
-	fprintf(stderr, "Usage:\n");
-	fprintf(stderr, "  %s %s %s [FMT]\n",
-			argv[ARG_CDT],
-			argv[ARG_DISPLAY],
-			cmd_screenshot.cmd);
-	fprintf(stderr, "\n");
-	fprintf(stderr, "Optional:\n");
-	fprintf(stderr, "  FMT -- Image format: png, jpeg\n");
+	cli_help(&cli, (argc > 0) ? argv[0] : "cdt");
 }

@@ -18,6 +18,7 @@
 #include "msg/msg.h"
 #include "cmd/private.h"
 
+#include "util/cli.h"
 #include "util/log.h"
 #include "util/file.h"
 #include "util/util.h"
@@ -26,6 +27,8 @@
 #define FP_SCALE (1 << 10)
 
 static struct cmd_sdl_ctx {
+	const char *display;
+
 	SDL_Window   *win;
 	SDL_Renderer *ren;
 
@@ -56,6 +59,26 @@ static struct cmd_sdl_ctx {
 	.window_h = 600,
 };
 
+static const struct cli_table_entry cli_entries[] = {
+	{
+		.p = true,
+		.l = "sdl",
+		.t = CLI_CMD,
+	},
+	{
+		.p = true,
+		.l = "DISPLAY",
+		.t = CLI_STRING,
+		.v.s = &cmd_sdl_g.display,
+		.d = "Identifier for browser context to connect to."
+	},
+};
+static const struct cli_table cli = {
+	.entries = cli_entries,
+	.count = (sizeof(cli_entries))/(sizeof(*cli_entries)),
+	.min_positional = 2,
+};
+
 static void cmd_sdl_fini(void *pw)
 {
 	struct cmd_sdl_ctx *ctx = pw;
@@ -76,20 +99,18 @@ static void cmd_sdl_fini(void *pw)
 	}
 }
 
-static bool cmd_sdl_init(int argc, const char **argv, void **pw_out)
+static bool cmd_sdl_init(int argc, const char **argv,
+		struct cmd_options *options, void **pw_out)
 {
 	int id;
-	enum {
-		ARG_CDT,
-		ARG_DISPLAY,
-		ARG_SDL,
-		ARG__COUNT,
-	};
 
-	if (argc != ARG__COUNT) {
-		cmd_help(argc, argv, NULL);
+	if (!cli_parse(&cli, argc, argv)) {
+		cdt_log(CDT_LOG_ERROR, "Failed to parse command line");
+		cmd_help(argc, argv, cli_entries[0].l);
 		return false;
 	}
+
+	options->display = cmd_sdl_g.display;
 
 	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
 		cdt_log(CDT_LOG_ERROR, "SDL_Init Error: %s", SDL_GetError());
@@ -511,17 +532,5 @@ const struct cmd_table cmd_sdl = {
 
 static void cmd_sdl_help(int argc, const char **argv)
 {
-	enum {
-		ARG_CDT,
-		ARG_DISPLAY,
-		ARG__COUNT,
-	};
-
-	CDT_UNUSED(argc);
-
-	fprintf(stderr, "Usage:\n");
-	fprintf(stderr, "  %s %s %s\n",
-			argv[ARG_CDT],
-			argv[ARG_DISPLAY],
-			cmd_sdl.cmd);
+	cli_help(&cli, (argc > 0) ? argv[0] : "cdt");
 }

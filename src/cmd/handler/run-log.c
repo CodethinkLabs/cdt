@@ -18,6 +18,7 @@
 
 #include "msg/msg.h"
 
+#include "util/cli.h"
 #include "util/log.h"
 #include "util/util.h"
 
@@ -128,24 +129,56 @@ static struct run_log_ctx {
 	char ***log;
 	unsigned log_count;
 
+	const char *display;
+	const char *script;
 	const char *end_marker;
 } run_log_g;
 
-static bool cmd_run_log_init(int argc, const char **argv, void **pw_out)
-{
-	enum {
-		ARG_CDT,
-		ARG_DISPLAY,
-		ARG_RUN_LOG,
-		ARG_SCRIPT,
-		ARG_END_MARKER,
-		ARG__COUNT,
-	};
+static const struct cli_table_entry cli_entries[] = {
+	{
+		.p = true,
+		.l = "run-log",
+		.t = CLI_CMD,
+	},
+	{
+		.p = true,
+		.l = "DISPLAY",
+		.t = CLI_STRING,
+		.v.s = &run_log_g.display,
+		.d = "Identifier for browser context to connect to."
+	},
+	{
+		.p = true,
+		.l = "SCRIPT",
+		.t = CLI_STRING,
+		.v.s = &run_log_g.script,
+		.d = "JSON-escaped JavaScript."
+	},
+	{
+		.s = 'e',
+		.l = "end-marker",
+		.t = CLI_STRING,
+		.v.s = &run_log_g.end_marker,
+		.d = "String indicating end of log."
+	},
+};
+static const struct cli_table cli = {
+	.entries = cli_entries,
+	.count = (sizeof(cli_entries))/(sizeof(*cli_entries)),
+	.min_positional = 3,
+};
 
-	if (argc < ARG_END_MARKER || argc > ARG__COUNT) {
-		cmd_help(argc, argv, NULL);
+static bool cmd_run_log_init(int argc, const char **argv,
+		struct cmd_options *options, void **pw_out)
+{
+
+	if (!cli_parse(&cli, argc, argv)) {
+		cdt_log(CDT_LOG_ERROR, "Failed to parse command line");
+		cmd_help(argc, argv, cli_entries[0].l);
 		return false;
 	}
+
+	options->display = run_log_g.display;
 
 	/* Send log capture script. */
 	msg_queue_for_send(&(const struct msg)
@@ -164,7 +197,7 @@ static bool cmd_run_log_init(int argc, const char **argv, void **pw_out)
 			.type = MSG_TYPE_EVALUATE,
 			.data = {
 				.evaluate = {
-					.expression = argv[ARG_SCRIPT],
+					.expression = run_log_g.script,
 				},
 			},
 		}, &run_log_g.id_expression);
@@ -179,10 +212,6 @@ static bool cmd_run_log_init(int argc, const char **argv, void **pw_out)
 				},
 			},
 		}, &run_log_g.id_fetch);
-
-	if (argc >= ARG__COUNT) {
-		run_log_g.end_marker = argv[ARG_END_MARKER];
-	}
 
 	*pw_out = &run_log_g;
 	return true;
@@ -338,23 +367,5 @@ const struct cmd_table cmd_run_log = {
 
 static void cmd_run_log_help(int argc, const char **argv)
 {
-	enum {
-		ARG_CDT,
-		ARG_DISPLAY,
-		ARG__COUNT,
-	};
-
-	CDT_UNUSED(argc);
-
-	fprintf(stderr, "Usage:\n");
-	fprintf(stderr, "  %s %s %s <SCRIPT> [END_MARKER]\n",
-			argv[ARG_CDT],
-			argv[ARG_DISPLAY],
-			cmd_run_log.cmd);
-	fprintf(stderr, "\n");
-	fprintf(stderr, "Parameters:\n");
-	fprintf(stderr, "  SCRIPT     -- JSON-escaped JavaScript\n");
-	fprintf(stderr, "\n");
-	fprintf(stderr, "Optional:\n");
-	fprintf(stderr, "  END_MARKER -- String indicating end of log\n");
+	cli_help(&cli, (argc > 0) ? argv[0] : "cdt");
 }
