@@ -27,12 +27,19 @@ At the moment the `cdt` tool expects to find a Chrome DevTools Protocol server a
 
 ```
 Usage:
-  ./cdt <DISPLAY> <CMD>
+  ./cdt <CMD>
 ```
 
 All `cdt` commands take two common parameters. These are the DISPLAY to connect to, and the CMD (command) to run.
 
 ### DISPLAY
+
+Most commands take a DISPLAY as the first parameter.
+
+```
+Usage:
+  ./cdt <CMD> <DISPLAY>
+```
 
 The DISPLAY is a string representing the display you want to interact with. If the DISPLAY you provide begins with a '/' character, it will treat it as the display's path and connect to `ws://localhost:9222[DISPLAY]`.
 
@@ -40,7 +47,7 @@ If the DISPLAY string does not start with a '/' character, it will fetch a displ
 
 ### CMD
 
-If you run `cdt`  with a valid display, it will list the available commands.
+If you run `cdt`  without any parameters, it will list the available commands.
 
 At the moment, the available commands are:
 
@@ -58,19 +65,19 @@ At the moment, the available commands are:
 For example, if you run:
 
 ```
-./cdt my-target tap
+./cdt tap
 ```
 
-It will tell you that it needs X and Y coordinates, so you would run it like so:
+It will tell you that it needs DISPLAY, X and Y coordinates, so you would run it like so:
 
 ```
-./cdt my-target tap 100 100
+./cdt tap my-target 100 100
 ```
 
 You can also get help on a command, e.g.:
 
 ```
-./cdt my-target help tap
+./cdt help tap
 ```
 
 Design
