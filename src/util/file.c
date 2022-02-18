@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "util/log.h"
 #include "util/file.h"
 
 void file_write(
@@ -24,14 +25,15 @@ void file_write(
 	ret = vasprintf(&filename, filename_fmt, args);
 	va_end(args);
 	if (ret < 0) {
-		fprintf(stderr, "%s: Failed to construct screenshot filename\n",
+		cdt_log(CDT_LOG_ERROR,
+				"%s: Failed to construct screenshot filename",
 				__func__);
 		return;
 	}
 
 	f = fopen(filename, "wb");
 	if (f == NULL) {
-		fprintf(stderr, "%s: Failed to open '%s'\n", __func__,
+		cdt_log(CDT_LOG_ERROR, "%s: Failed to open '%s'", __func__,
 				filename);
 		free(filename);
 		return;
@@ -40,6 +42,6 @@ void file_write(
 	fwrite(data, data_len, 1, f);
 	fclose(f);
 
-	fprintf(stderr, "Saved: %s\n", filename);
+	cdt_log(CDT_LOG_NOTICE, "Saved: %s", filename);
 	free(filename);
 }
