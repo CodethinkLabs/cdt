@@ -24,24 +24,12 @@ static struct swipe_ctx {
 	int64_t speed;
 	int64_t x_dist;
 	int64_t y_dist;
-	const char *display;
 } swipe_ctx = {
 	.speed = 800,
 };
 
 static const struct cli_table_entry cli_entries[] = {
-	{
-		.p = true,
-		.l = "swipe",
-		.t = CLI_CMD,
-	},
-	{
-		.p = true,
-		.l = "DISPLAY",
-		.t = CLI_STRING,
-		.v.s = &swipe_ctx.display,
-		.d = "Identifier for browser context to connect to."
-	},
+	CMD_CLI_COMMON("swipe"),
 	{
 		.p = true,
 		.l = "X",
@@ -89,13 +77,9 @@ static bool cmd_swipe_init(int argc, const char **argv,
 {
 	int id;
 
-	if (!cli_parse(&cli, argc, argv)) {
-		cdt_log(CDT_LOG_ERROR, "Failed to parse command line");
-		cmd_help(argc, argv, cli_entries[0].l);
+	if (!cmd_cli_parse(argc, argv, &cli, options)) {
 		return false;
 	}
-
-	options->display = swipe_ctx.display;
 
 	msg_queue_for_send(&(const struct msg)
 		{

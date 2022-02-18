@@ -129,24 +129,12 @@ static struct run_log_ctx {
 	char ***log;
 	unsigned log_count;
 
-	const char *display;
 	const char *script;
 	const char *end_marker;
 } run_log_g;
 
 static const struct cli_table_entry cli_entries[] = {
-	{
-		.p = true,
-		.l = "run-log",
-		.t = CLI_CMD,
-	},
-	{
-		.p = true,
-		.l = "DISPLAY",
-		.t = CLI_STRING,
-		.v.s = &run_log_g.display,
-		.d = "Identifier for browser context to connect to."
-	},
+	CMD_CLI_COMMON("run-log"),
 	{
 		.p = true,
 		.l = "SCRIPT",
@@ -171,14 +159,9 @@ static const struct cli_table cli = {
 static bool cmd_run_log_init(int argc, const char **argv,
 		struct cmd_options *options, void **pw_out)
 {
-
-	if (!cli_parse(&cli, argc, argv)) {
-		cdt_log(CDT_LOG_ERROR, "Failed to parse command line");
-		cmd_help(argc, argv, cli_entries[0].l);
+	if (!cmd_cli_parse(argc, argv, &cli, options)) {
 		return false;
 	}
-
-	options->display = run_log_g.display;
 
 	/* Send log capture script. */
 	msg_queue_for_send(&(const struct msg)

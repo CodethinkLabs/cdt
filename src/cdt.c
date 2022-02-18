@@ -254,12 +254,17 @@ static bool setup(int argc, const char **argv,
 {
 	struct cmd_options options = {
 		.display = NULL,
+		.log_level = CDT_LOG_NOTICE,
+		.log_target = CDT_LOG_STDERR,
 	};
 
 	if (!cmd_init(argc, argv, &options, &cdt_g.cmd_pw)) {
 		cdt_log(CDT_LOG_ERROR, "Setup failed");
 		return false;
 	}
+
+	cdt_log_set_level(options.log_level);
+	cdt_log_set_target(options.log_target);
 
 	*display = options.display;
 	return true;

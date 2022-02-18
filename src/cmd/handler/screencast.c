@@ -32,18 +32,7 @@ static struct cmd_screencast_ctx {
 };
 
 static const struct cli_table_entry cli_entries[] = {
-	{
-		.p = true,
-		.l = "screencast",
-		.t = CLI_CMD,
-	},
-	{
-		.p = true,
-		.l = "DISPLAY",
-		.t = CLI_STRING,
-		.v.s = &cmd_screencast_g.display,
-		.d = "Identifier for browser context to connect to."
-	},
+	CMD_CLI_COMMON("screencast"),
 	{
 		.s = 's',
 		.l = "max-size",
@@ -63,13 +52,11 @@ static bool cmd_screencast_init(int argc, const char **argv,
 {
 	int id;
 
-	if (!cli_parse(&cli, argc, argv)) {
-		cdt_log(CDT_LOG_ERROR, "Failed to parse command line");
-		cmd_help(argc, argv, cli_entries[0].l);
+	if (!cmd_cli_parse(argc, argv, &cli, options)) {
 		return false;
 	}
 
-	options->display = cmd_screencast_g.display;
+	cmd_screencast_g.display = options->display;
 
 	msg_queue_for_send(&(const struct msg)
 		{

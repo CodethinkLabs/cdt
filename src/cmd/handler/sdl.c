@@ -27,8 +27,6 @@
 #define FP_SCALE (1 << 10)
 
 static struct cmd_sdl_ctx {
-	const char *display;
-
 	SDL_Window   *win;
 	SDL_Renderer *ren;
 
@@ -60,18 +58,7 @@ static struct cmd_sdl_ctx {
 };
 
 static const struct cli_table_entry cli_entries[] = {
-	{
-		.p = true,
-		.l = "sdl",
-		.t = CLI_CMD,
-	},
-	{
-		.p = true,
-		.l = "DISPLAY",
-		.t = CLI_STRING,
-		.v.s = &cmd_sdl_g.display,
-		.d = "Identifier for browser context to connect to."
-	},
+	CMD_CLI_COMMON("sdl"),
 };
 static const struct cli_table cli = {
 	.entries = cli_entries,
@@ -104,13 +91,9 @@ static bool cmd_sdl_init(int argc, const char **argv,
 {
 	int id;
 
-	if (!cli_parse(&cli, argc, argv)) {
-		cdt_log(CDT_LOG_ERROR, "Failed to parse command line");
-		cmd_help(argc, argv, cli_entries[0].l);
+	if (!cmd_cli_parse(argc, argv, &cli, options)) {
 		return false;
 	}
-
-	options->display = cmd_sdl_g.display;
 
 	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
 		cdt_log(CDT_LOG_ERROR, "SDL_Init Error: %s", SDL_GetError());
