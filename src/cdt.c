@@ -19,6 +19,7 @@
 #include "msg/msg.h"
 #include "msg/queue.h"
 
+#include "util/log.h"
 #include "util/util.h"
 #include "util/buffer.h"
 
@@ -44,7 +45,7 @@ static bool cdt_send_msg(struct lws *wsi)
 
 	len = msg_get_len(msg);
 
-	fprintf(stderr, "Sending: %s\n", msg);
+	cdt_log(CDT_LOG_INFO, "Sending: %s", msg);
 	lws_write(wsi, (unsigned char *)msg, len, LWS_WRITE_TEXT);
 	msg_queue_push(msg_queue_get_sent(), msg);
 
@@ -68,7 +69,8 @@ static bool cdt_msg_scan_cb(
 
 		msg_sent = msg_queue_find_by_id(msg_queue_get_sent(), id);
 		if (msg_sent == NULL) {
-			fprintf(stderr, "%s: Failed to find sent message: %i\n",
+			cdt_log(CDT_LOG_ERROR,
+					"%s: Failed to find sent message: %i",
 					__func__, id);
 		} else {
 			msg_queue_remove(msg_queue_get_sent(), msg_sent);
@@ -114,7 +116,7 @@ static bool cdt_rec_msg(const char *msg_rec, size_t len)
 
 	switch (scan) {
 	case MSG_SCAN_ERROR:
-		fprintf(stderr, "%s: Failed to scan message: %*s\n",
+		cdt_log(CDT_LOG_ERROR, "%s: Failed to scan message: %*s",
 				__func__, (int)len, msg_rec);
 		cdt_buffer_clear(&cdt_g.multipart_msg);
 		return false;
@@ -129,7 +131,8 @@ static bool cdt_rec_msg(const char *msg_rec, size_t len)
 				cdt_g.multipart_msg.len,
 				spec, CDT_ARRAY_COUNT(spec),
 				cdt_msg_scan_cb, NULL)) {
-			fprintf(stderr, "%s: Failed to scan message: %*s\n",
+			cdt_log(CDT_LOG_ERROR,
+					"%s: Failed to scan message: %*s",
 					__func__, (int)len, msg_rec);
 		}
 
@@ -153,7 +156,7 @@ static int devtools_cb(struct lws *wsi, enum lws_callback_reasons reason,
 
 	switch (reason) {
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
-		fprintf(stderr, "Connected\n");
+		cdt_log(CDT_LOG_NOTICE, "Connected");
 		lws_callback_on_writable(wsi);
 		break;
 
@@ -168,7 +171,7 @@ static int devtools_cb(struct lws *wsi, enum lws_callback_reasons reason,
 	case LWS_CALLBACK_CLOSED:
 	case LWS_CALLBACK_CLIENT_CLOSED:
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-		fprintf(stderr, "Disconnected\n");
+		cdt_log(CDT_LOG_NOTICE, "Disconnected");
 		cdt_g.web_socket = NULL;
 		break;
 
@@ -210,11 +213,11 @@ static bool cdt_cli_parse_common(int argc, const char **argv)
 
 	cdt_g.path = display_get_path(argv[ARG_DISPLAY]);
 	if (cdt_g.path == NULL) {
-		fprintf(stderr, "Invalid display: %s\n", argv[ARG_DISPLAY]);
+		cdt_log(CDT_LOG_ERROR, "Invalid display: %s", argv[ARG_DISPLAY]);
 		return false;
 	}
 
-	fprintf(stderr, "Using %s as display path\n", cdt_g.path);
+	cdt_log(CDT_LOG_NOTICE, "Using %s as display path", cdt_g.path);
 
 	return true;
 }
@@ -299,13 +302,13 @@ int main(int argc, const char *argv[])
 			lwsl_emit_syslog);
 
 	if (!cdt_setup(argc, argv)) {
-		fprintf(stderr, "Setup failed\n");
+		cdt_log(CDT_LOG_ERROR, "Setup failed");
 		return EXIT_FAILURE;
 	}
 
 	context = lws_create_context(&info);
 	if (context == NULL) {
-		fprintf(stderr, "lws_create_context failed\n");
+		cdt_log(CDT_LOG_ERROR, "lws_create_context failed");
 		return EXIT_FAILURE;
 	}
 
