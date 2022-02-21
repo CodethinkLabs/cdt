@@ -13,21 +13,37 @@
 #include "cmd/private.h"
 
 #include "msg/msg.h"
+
+#include "util/cli.h"
+#include "util/log.h"
 #include "util/util.h"
 
-static bool cmd_run_init(int argc, const char **argv, void **pw_out)
+static struct run_ctx {
+	const char *script;
+} run_ctx;
+
+static const struct cli_table_entry cli_entries[] = {
+	CMD_CLI_COMMON("run"),
+	{
+		.p = true,
+		.l = "SCRIPT",
+		.t = CLI_STRING,
+		.v.s = &run_ctx.script,
+		.d = "JSON-escaped JavaScript."
+	},
+};
+static const struct cli_table cli = {
+	.entries = cli_entries,
+	.count = (sizeof(cli_entries))/(sizeof(*cli_entries)),
+	.min_positional = 3,
+};
+
+static bool cmd_run_init(int argc, const char **argv,
+		struct cmd_options *options, void **pw_out)
 {
 	int id;
-	enum {
-		ARG_CDT,
-		ARG_DISPLAY,
-		ARG_RUN,
-		ARG_SCRIPT,
-		ARG__COUNT,
-	};
 
-	if (argc != ARG__COUNT) {
-		cmd_help(argc, argv, NULL);
+	if (!cmd_cli_parse(argc, argv, &cli, options)) {
 		return false;
 	}
 
@@ -36,7 +52,7 @@ static bool cmd_run_init(int argc, const char **argv, void **pw_out)
 			.type = MSG_TYPE_EVALUATE,
 			.data = {
 				.evaluate = {
-					.expression = argv[ARG_SCRIPT],
+					.expression = run_ctx.script,
 				},
 			},
 		}, &id);
@@ -49,7 +65,7 @@ static void cmd_run_msg(void *pw, int id, const char *msg, size_t len)
 {
 	(void)(pw);
 
-	fprintf(stderr, "Received message with id %i: %*s\n",
+	cdt_log(CDT_LOG_NOTICE, "Received message with id %i: %*s",
 			id, (int)len, msg);
 }
 
@@ -64,20 +80,5 @@ const struct cmd_table cmd_run = {
 
 static void cmd_run_help(int argc, const char **argv)
 {
-	enum {
-		ARG_CDT,
-		ARG_DISPLAY,
-		ARG__COUNT,
-	};
-
-	CDT_UNUSED(argc);
-
-	fprintf(stderr, "Usage:\n");
-	fprintf(stderr, "  %s %s %s <SCRIPT>\n",
-			argv[ARG_CDT],
-			argv[ARG_DISPLAY],
-			cmd_run.cmd);
-	fprintf(stderr, "\n");
-	fprintf(stderr, "Parameters:\n");
-	fprintf(stderr, "  SCRIPT     -- JSON-escaped JavaScript\n");
+	cli_help(&cli, (argc > 0) ? argv[0] : "cdt");
 }

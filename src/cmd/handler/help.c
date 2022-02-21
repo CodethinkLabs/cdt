@@ -13,23 +13,42 @@
 #include "cmd/private.h"
 
 #include "msg/msg.h"
+
+#include "util/cli.h"
+#include "util/log.h"
 #include "util/util.h"
 
-static bool cmd_help_init(int argc, const char **argv, void **pw_out)
-{
-	enum {
-		ARG_CDT,
-		ARG_DISPLAY,
-		ARG_HELP,
-		ARG_CMD,
-		ARG__COUNT,
-	};
+static const char *command = NULL;
+static const struct cli_table_entry cli_entries[] = {
+	{
+		.p = true,
+		.l = "help",
+		.t = CLI_CMD,
+	},
+	{
+		.p = true,
+		.l = "COMMAND",
+		.t = CLI_STRING,
+		.v.s = &command,
+		.d = "Command to get help for."
+	},
+};
+static const struct cli_table cli = {
+	.entries = cli_entries,
+	.count = (sizeof(cli_entries))/(sizeof(*cli_entries)),
+	.min_positional = 1,
+};
 
-	if (argc < ARG_CMD) {
-		cmd_help(argc, argv, NULL);
-	} else {
-		cmd_help(argc, argv, argv[ARG_CMD]);
+static bool cmd_help_init(int argc, const char **argv,
+		struct cmd_options *options, void **pw_out)
+{
+	CDT_UNUSED(options);
+
+	if (!cli_parse(&cli, argc, argv)) {
+		cdt_log(CDT_LOG_ERROR, "Failed to parse command line");
 	}
+
+	cmd_help(argc, argv, command);
 
 	*pw_out = NULL;
 	return false;
@@ -45,20 +64,9 @@ const struct cmd_table cmd_help_table = {
 
 static void cmd_help_help(int argc, const char **argv)
 {
-	enum {
-		ARG_CDT,
-		ARG_DISPLAY,
-		ARG__COUNT,
-	};
+	cli_help(&cli, (argc > 0) ? argv[0] : "cdt");
 
-	CDT_UNUSED(argc);
-
-	fprintf(stderr, "Usage:\n");
-	fprintf(stderr, "  %s %s %s [CMD]\n",
-			argv[ARG_CDT],
-			argv[ARG_DISPLAY],
-			cmd_help_table.cmd);
 	fprintf(stderr, "\n");
-	fprintf(stderr, "Optional:\n");
-	fprintf(stderr, "  CMD -- Command to print specific help for.\n");
+	cmd_print_command_list();
+	fprintf(stderr, "\n");
 }

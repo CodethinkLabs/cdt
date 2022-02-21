@@ -16,6 +16,15 @@
  * the program lifecycle.
  */
 
+/** Common parameters. */
+struct cmd_options {
+	const char *display;
+	const char *host;
+	int64_t port;
+	int64_t log_level;
+	int64_t log_target;
+};
+
 /**
  * Print help text for the command.
  *
@@ -31,12 +40,14 @@ void cmd_help(int argc, const char **argv, const char *cmd);
  * Detects which subcommand is requested, reads and CLI arguments it needs,
  * and initialises the cmd-specific code.
  *
- * \param[in]  argc    Number of command line arguments.
- * \param[in]  argv    String vector containing command line arguments.
- * \param[out] pw_out  Returns private cmd data to be passed to other calls.
+ * \param[in]  argc     Number of command line arguments.
+ * \param[in]  argv     String vector containing command line arguments.
+ * \param[in]  options  Common command options parsed from arguments.
+ * \param[out] pw_out   Returns private cmd data to be passed to other calls.
  * \return true on success, false otherwise.
  */
-bool cmd_init(int argc, const char **argv, void **pw_out);
+bool cmd_init(int argc, const char **argv,
+		struct cmd_options *options, void **pw_out);
 
 /**
  * Let the command handle a received message.
@@ -75,5 +86,10 @@ bool cmd_tick(void *pw);
  * \param[in] pw  The command's private context.
  */
 void cmd_fini(void *pw);
+
+/**
+ * Print a list of available commands.
+ */
+void cmd_print_command_list(void);
 
 #endif

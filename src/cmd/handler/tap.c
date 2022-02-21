@@ -13,22 +13,45 @@
 #include "cmd/private.h"
 
 #include "msg/msg.h"
+
+#include "util/cli.h"
+#include "util/log.h"
 #include "util/util.h"
 
-static bool cmd_tap_init(int argc, const char **argv, void **pw_out)
+static struct tap_ctx {
+	int64_t x;
+	int64_t y;
+} tap_ctx;
+
+static const struct cli_table_entry cli_entries[] = {
+	CMD_CLI_COMMON("tap"),
+	{
+		.p = true,
+		.l = "X",
+		.t = CLI_INT,
+		.v.i = &tap_ctx.x,
+		.d = "X coordinate to tap (px from top edge)."
+	},
+	{
+		.p = true,
+		.l = "Y",
+		.t = CLI_INT,
+		.v.i = &tap_ctx.y,
+		.d = "Y coordinate to tap (px from left edge)."
+	},
+};
+static const struct cli_table cli = {
+	.entries = cli_entries,
+	.count = (sizeof(cli_entries))/(sizeof(*cli_entries)),
+	.min_positional = 4,
+};
+
+static bool cmd_tap_init(int argc, const char **argv,
+		struct cmd_options *options, void **pw_out)
 {
 	int id;
-	enum {
-		ARG_CDT,
-		ARG_DISPLAY,
-		ARG_TAP,
-		ARG_X,
-		ARG_Y,
-		ARG__COUNT,
-	};
 
-	if (argc < ARG__COUNT) {
-		cmd_help(argc, argv, NULL);
+	if (!cmd_cli_parse(argc, argv, &cli, options)) {
 		return false;
 	}
 
@@ -37,8 +60,8 @@ static bool cmd_tap_init(int argc, const char **argv, void **pw_out)
 			.type = MSG_TYPE_TOUCH_EVENT_START,
 			.data = {
 				.touch_event = {
-					.x = atoi(argv[ARG_X]),
-					.y = atoi(argv[ARG_Y]),
+					.x = (int)tap_ctx.x,
+					.y = (int)tap_ctx.y,
 				},
 			},
 		}, &id);
@@ -56,7 +79,7 @@ static void cmd_tap_msg(void *pw, int id, const char *msg, size_t len)
 {
 	(void)(pw);
 
-	fprintf(stderr, "Received message with id %i: %*s\n",
+	cdt_log(CDT_LOG_NOTICE, "Received message with id %i: %*s",
 			id, (int)len, msg);
 }
 
@@ -71,21 +94,5 @@ const struct cmd_table cmd_tap = {
 
 static void cmd_tap_help(int argc, const char **argv)
 {
-	enum {
-		ARG_CDT,
-		ARG_DISPLAY,
-		ARG__COUNT,
-	};
-
-	CDT_UNUSED(argc);
-
-	fprintf(stderr, "Usage:\n");
-	fprintf(stderr, "  %s %s %s <X> <Y>\n",
-			argv[ARG_CDT],
-			argv[ARG_DISPLAY],
-			cmd_tap.cmd);
-	fprintf(stderr, "\n");
-	fprintf(stderr, "Parameters:\n");
-	fprintf(stderr, "  X -- X coordinate to tap (px from top edge).\n");
-	fprintf(stderr, "  Y -- Y coordinate to tap (px from left edge).\n");
+	cli_help(&cli, (argc > 0) ? argv[0] : "cdt");
 }

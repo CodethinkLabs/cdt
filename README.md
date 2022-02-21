@@ -23,16 +23,23 @@ That should build the executable, `cdt`.
 Using
 -----
 
-At the moment the `cdt` tool expects to find a Chrome DevTools Protocol server at the fixed address of `localhost:9222`. To connect to a remote server I have used SSH port forwarding.
+By default the `cdt` tool expects to find a Chrome DevTools Protocol server at `localhost:9222`. This can be overridden with command line options. To connect to a remote server I have used SSH port forwarding.
 
 ```
 Usage:
-  ./cdt <DISPLAY> <CMD>
+  ./cdt <CMD>
 ```
 
 All `cdt` commands take two common parameters. These are the DISPLAY to connect to, and the CMD (command) to run.
 
 ### DISPLAY
+
+Most commands take a DISPLAY as the first parameter.
+
+```
+Usage:
+  ./cdt <CMD> <DISPLAY>
+```
 
 The DISPLAY is a string representing the display you want to interact with. If the DISPLAY you provide begins with a '/' character, it will treat it as the display's path and connect to `ws://localhost:9222[DISPLAY]`.
 
@@ -40,7 +47,7 @@ If the DISPLAY string does not start with a '/' character, it will fetch a displ
 
 ### CMD
 
-If you run `cdt`  with a valid display, it will list the available commands.
+If you run `cdt`  without any parameters, it will list the available commands.
 
 At the moment, the available commands are:
 
@@ -58,19 +65,78 @@ At the moment, the available commands are:
 For example, if you run:
 
 ```
-./cdt my-target tap
+./cdt tap
 ```
 
-It will tell you that it needs X and Y coordinates, so you would run it like so:
+It will tell you that it needs `DISPLAY`, and `X` and `Y` coordinates, so you
+would run it like so:
 
 ```
-./cdt my-target tap 100 100
+./cdt tap my-target 100 100
 ```
 
-You can also get help on a command, e.g.:
+You can also get `help` on a command, e.g.:
 
 ```
-./cdt my-target help tap
+./cdt help tap
+```
+
+Example
+-------
+
+First lets launch a browser with the Chrome DevTools Protocol server enabled.
+For example, using Chrome:
+
+```bash
+chrome --remote-debugging-port=9222 https://www.codethink.co.uk/
+```
+
+Note, you can also run the browser fully headless:
+
+```bash
+chrome --headless --remote-debugging-port=9222 https://www.codethink.co.uk/
+```
+
+Now if we want to connect to interact with the browser session remotely, we can
+use `cdt`'s interactive SDL front end:
+
+```bash
+./cdt sdl Codethink
+```
+
+Note that the display will be quite low resolution, because `cdt` is set up to
+minimise bandwidth overheads.
+
+The main purpose of `cdt` is to allow scripting of web app interaction. So let's
+try a command that scrolls the page:
+
+```bash
+./cdt swipe Codethink 400 300 up 800
+```
+
+And we can run a script in the JavaScript console.
+
+```JavaScript
+main = document.querySelector('main');
+main.style.backgroundColor = 'red';
+```
+
+This script will find the `<main>` element and turn its background red. To run
+it on the page, we can use the `run` command:
+
+```bash
+./cdt run Codethink "main = document.querySelector('main');main.style.backgroundColor = 'red';"
+```
+
+We can also run a script, watching the JavaScript `console.log` with the
+`run-log` command. By default this will keep fetching the log until the program
+is killed with <kbd>ctrl</kbd>+<kbd>c</kbd>.
+
+The optional `--end-marker` argument can be used to provide a string, that will
+cause the program to exit when the string appears in the log. For example:
+
+```bash
+./cdt run-log Codethink "console.log('Hello world')" -e "world"
 ```
 
 Design

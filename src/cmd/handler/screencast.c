@@ -17,6 +17,8 @@
 #include "msg/msg.h"
 #include "cmd/private.h"
 
+#include "util/cli.h"
+#include "util/log.h"
 #include "util/file.h"
 #include "util/util.h"
 #include "util/base64.h"
@@ -24,46 +26,49 @@
 static struct cmd_screencast_ctx {
 	const char *display;
 	const char *format;
-} cmd_screencast_g;
+	uint64_t max_size;
+} cmd_screencast_g = {
+	.format = "jpeg",
+};
 
-static bool cmd_screencast_init(int argc, const char **argv, void **pw_out)
+static const struct cli_table_entry cli_entries[] = {
+	CMD_CLI_COMMON("screencast"),
+	{
+		.s = 's',
+		.l = "max-size",
+		.t = CLI_UINT,
+		.v.u = &cmd_screencast_g.max_size,
+		.d = "Maximum x/y dimension in px."
+	},
+};
+static const struct cli_table cli = {
+	.entries = cli_entries,
+	.count = (sizeof(cli_entries))/(sizeof(*cli_entries)),
+	.min_positional = 2,
+};
+
+static bool cmd_screencast_init(int argc, const char **argv,
+		struct cmd_options *options, void **pw_out)
 {
 	int id;
-	int w = 0;
-	int h = 0;
-	const char *format = "jpeg";
-	enum {
-		ARG_CDT,
-		ARG_DISPLAY,
-		ARG_SCREENCAST,
-		ARG_MAX_SIZE,
-		ARG__COUNT,
-	};
 
-	if (argc < ARG_MAX_SIZE || argc > ARG__COUNT) {
-		cmd_help(argc, argv, NULL);
+	if (!cmd_cli_parse(argc, argv, &cli, options)) {
 		return false;
 	}
 
-	if (argc > ARG_MAX_SIZE) {
-		w = atoi(argv[ARG_MAX_SIZE]);
-		h = atoi(argv[ARG_MAX_SIZE]);
-	}
+	cmd_screencast_g.display = options->display;
 
 	msg_queue_for_send(&(const struct msg)
 		{
 			.type = MSG_TYPE_START_SCREENCAST,
 			.data = {
 				.start_screencast = {
-					.max_width = w,
-					.max_height = h,
-					.format = format,
+					.max_width = (int)cmd_screencast_g.max_size,
+					.max_height = (int)cmd_screencast_g.max_size,
+					.format = cmd_screencast_g.format,
 				},
 			},
 		}, &id);
-
-	cmd_screencast_g.format = format;
-	cmd_screencast_g.display = argv[ARG_DISPLAY];
 
 	*pw_out = &cmd_screencast_g;
 	return true;
@@ -73,7 +78,7 @@ static void cmd_screencast_msg(void *pw, int id, const char *msg, size_t len)
 {
 	(void)(pw);
 
-	fprintf(stderr, "Received response with id %i: %.*s\n",
+	cdt_log(CDT_LOG_NOTICE, "Received response with id %i: %.*s",
 			id, (int)len, msg);
 }
 
@@ -119,7 +124,7 @@ static void cmd_screencast_evt(void *pw, const char *method, size_t method_len,
 {
 	struct cmd_screencast_ctx *ctx = pw;
 
-	fprintf(stderr, "Received event with method: %.*s\n",
+	cdt_log(CDT_LOG_NOTICE, "Received event with method: %.*s",
 			(int)method_len, method);
 
 	if (strncmp(method, "Page.screencastFrame", method_len) == 0) {
@@ -154,13 +159,15 @@ static void cmd_screencast_evt(void *pw, const char *method, size_t method_len,
 		if (!msg_str_scan(msg, len,
 				spec, CDT_ARRAY_COUNT(spec),
 				cmd_screencast_msg_scan_cb, &scan)) {
-			fprintf(stderr, "%s: Failed to scan message: %*s\n",
+			cdt_log(CDT_LOG_ERROR,
+					"%s: Failed to scan message: %*s",
 					__func__, (int)method_len, method);
 			return;
 		}
 
 		if (scan.found != FOUND_MASK) {
-			fprintf(stderr, "%s: Message missing components: %*s\n",
+			cdt_log(CDT_LOG_ERROR,
+					"%s: Message missing components: %*s",
 					__func__, (int)method_len, method);
 			return;
 		}
@@ -179,7 +186,8 @@ static void cmd_screencast_evt(void *pw, const char *method, size_t method_len,
 				scan.data,
 				scan.data_len,
 				&scr, &scr_len)) {
-			fprintf(stderr, "%s: Base64 decode failed\n", __func__);
+			cdt_log(CDT_LOG_ERROR, "%s: Base64 decode failed",
+					__func__);
 			return;
 		}
 
@@ -195,7 +203,7 @@ static void cmd_screencast_evt(void *pw, const char *method, size_t method_len,
 static bool cmd_screencast_tick(void *pw)
 {
 	(void)(pw);
-	usleep(1000 * 100);
+	usleep(1000 * 10);
 	return true;
 }
 
@@ -212,20 +220,5 @@ const struct cmd_table cmd_screencast = {
 
 static void cmd_screencast_help(int argc, const char **argv)
 {
-	enum {
-		ARG_CDT,
-		ARG_DISPLAY,
-		ARG__COUNT,
-	};
-
-	CDT_UNUSED(argc);
-
-	fprintf(stderr, "Usage:\n");
-	fprintf(stderr, "  %s %s %s [MAX_SIZE]\n",
-			argv[ARG_CDT],
-			argv[ARG_DISPLAY],
-			cmd_screencast.cmd);
-	fprintf(stderr, "\n");
-	fprintf(stderr, "Optional:\n");
-	fprintf(stderr, "  MAX_SIZE -- Maximum x/y dimension in px\n");
+	cli_help(&cli, (argc > 0) ? argv[0] : "cdt");
 }

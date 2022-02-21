@@ -7,6 +7,6 @@
 #ifndef CDT_DISPLAY_H
 #define CDT_DISPLAY_H
 
-char *display_get_path(const char *display);
+char *display_get_path(const char *display, const char *host, int port);
 
 #endif

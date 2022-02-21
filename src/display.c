@@ -13,6 +13,8 @@
 #include "display.h"
 
 #include "msg/msg.h"
+
+#include "util/log.h"
 #include "util/buffer.h"
 
 struct display {
@@ -78,13 +80,13 @@ static int http_cb(struct lws *wsi, enum lws_callback_reasons reason,
 
 	switch (reason) {
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-		fprintf(stderr, "Disconnected\n");
+		cdt_log(CDT_LOG_ERROR, "Disconnected");
 		display_g.client_wsi = NULL;
 		break;
 
 	case LWS_CALLBACK_ESTABLISHED_CLIENT_HTTP:
 		status = lws_http_client_http_response(wsi);
-		fprintf(stderr, "Connected with server response: %d\n", status);
+		cdt_log(CDT_LOG_INFO, "Connected with server response: %d", status);
 		break;
 
 	case LWS_CALLBACK_RECEIVE_CLIENT_HTTP_READ:
@@ -159,13 +161,13 @@ static bool display_parse(const uint8_t *data, size_t len)
 			(void **)&display_g.display,
 			&display_g.display_count);
 	if (res != CYAML_OK) {
-		fprintf(stderr, "Failed to parse display spec: %s\n",
+		cdt_log(CDT_LOG_ERROR, "Failed to parse display spec: %s",
 				cyaml_strerror(res));
 		return false;
 	}
 
 	if (display_g.display_count == 0) {
-		fprintf(stderr, "No displays found\n");
+		cdt_log(CDT_LOG_ERROR, "No displays found");
 		display__free_displays();
 		return false;
 	}
@@ -173,7 +175,7 @@ static bool display_parse(const uint8_t *data, size_t len)
 	return true;
 }
 
-static bool display_init(void)
+static bool display_init(const char *host, int port)
 {
 	bool parsed;
 	struct lws_context *context;
@@ -184,8 +186,8 @@ static bool display_init(void)
 		.uid = -1,
 	};
 	struct lws_client_connect_info i = {
-		.address = "localhost",
-		.port = 9222,
+		.port = port,
+		.address = host,
 		.path = "/json",
 		.method = "GET",
 		.host = i.address,
@@ -196,7 +198,7 @@ static bool display_init(void)
 
 	context = lws_create_context(&info);
 	if (context == NULL) {
-		fprintf(stderr, "lws_create_context failed\n");
+		cdt_log(CDT_LOG_ERROR, "lws_create_context failed");
 		return EXIT_FAILURE;
 	}
 
@@ -231,7 +233,7 @@ static void display_fini(void)
 	display__free_displays();
 }
 
-char *display_get_path(const char *display)
+char *display_get_path(const char *display, const char *host, int port)
 {
 	char *path = NULL;
 
@@ -239,7 +241,7 @@ char *display_get_path(const char *display)
 		path = strdup(display);
 
 	} else {
-		if (!display_init()) {
+		if (!display_init(host, port)) {
 			return NULL;
 		}
 

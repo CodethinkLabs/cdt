@@ -13,6 +13,7 @@
 #include "msg/queue.h"
 #include "msg/private.h"
 
+#include "util/log.h"
 #include "util/util.h"
 
 struct msg_ctx msg_g;
@@ -35,7 +36,8 @@ bool msg_create(struct msg_container **msg, const char *restrict fmt, ...)
 	va_end(args);
 
 	if (ret <= 0) {
-		fprintf(stderr, "%s: Message length failed!\n", __func__);
+		cdt_log(CDT_LOG_ERROR, "%s: Message size calculation failed!",
+				__func__);
 		goto error;
 	}
 
@@ -45,7 +47,7 @@ bool msg_create(struct msg_container **msg, const char *restrict fmt, ...)
 			+ LWS_SEND_BUFFER_POST_PADDING;
 	cont = calloc(size, 1);
 	if (cont == NULL) {
-		fprintf(stderr, "%s: Allocation failed!\n", __func__);
+		cdt_log(CDT_LOG_ERROR, "%s: Allocation failed!", __func__);
 		goto error;
 	}
 
@@ -56,7 +58,8 @@ bool msg_create(struct msg_container **msg, const char *restrict fmt, ...)
 
 	if (vsnprintf(cont->str, (unsigned)ret + 1, fmt, args2) != ret) {
 		free(cont);
-		fprintf(stderr, "%s: Message length unexpected!\n", __func__);
+		cdt_log(CDT_LOG_ERROR, "%s: Message length unexpected!",
+				__func__);
 		goto error;
 	}
 
@@ -96,14 +99,15 @@ bool msg_to_msg_str(const struct msg *msg, char **msg_str, int *id_out)
 	};
 
 	if (msg->type >= CDT_ARRAY_COUNT(msg_stringify)) {
-		fprintf(stderr, "%s: Message type not handled: %i\n",
+		cdt_log(CDT_LOG_ERROR, "%s: Message type not handled: %i",
 				__func__, msg->type);
 		return false;
 	}
 
 	*msg_str = msg_stringify[msg->type](msg, id);
 	if (*msg_str == NULL) {
-		fprintf(stderr, "%s: Failed to assemble message type: %i\n",
+		cdt_log(CDT_LOG_ERROR,
+				"%s: Failed to assemble message type: %i",
 				__func__, msg->type);
 		return false;
 	}

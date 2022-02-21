@@ -24,8 +24,10 @@ PKG_DEPS := libwebsockets libcyaml sdl2 SDL2_image
 CFLAGS += $(shell $(PKG_CONFIG) --cflags $(PKG_DEPS))
 LDFLAGS += $(shell $(PKG_CONFIG) --libs $(PKG_DEPS))
 
-SRC := src/cdt.c src/display.c src/cmd/cmd.c src/msg/msg.c src/msg/queue.c
-SRC += src/util/base64.c src/util/buffer.c src/util/file.c
+SRC := $(addprefix src/,cdt.c display.c)
+SRC += $(addprefix src/cmd/,cmd.c)
+SRC += $(addprefix src/msg/,msg.c queue.c)
+SRC += $(addprefix src/util/,base64.c buffer.c cli.c file.c log.c)
 SRC += $(shell find src/cmd/handler -type f -name *.c)
 SRC += $(shell find src/msg/handler -type f -name *.c)
 OBJ := $(patsubst %.c,%.o, $(addprefix $(BUILDDIR)/,$(SRC)))
