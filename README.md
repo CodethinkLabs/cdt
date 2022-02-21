@@ -68,16 +68,75 @@ For example, if you run:
 ./cdt tap
 ```
 
-It will tell you that it needs DISPLAY, X and Y coordinates, so you would run it like so:
+It will tell you that it needs `DISPLAY`, and `X` and `Y` coordinates, so you
+would run it like so:
 
 ```
 ./cdt tap my-target 100 100
 ```
 
-You can also get help on a command, e.g.:
+You can also get `help` on a command, e.g.:
 
 ```
 ./cdt help tap
+```
+
+Example
+-------
+
+First lets launch a browser with the Chrome DevTools Protocol server enabled.
+For example, using Chrome:
+
+```bash
+chrome --remote-debugging-port=9222 https://www.codethink.co.uk/
+```
+
+Note, you can also run the browser fully headless:
+
+```bash
+chrome --headless --remote-debugging-port=9222 https://www.codethink.co.uk/
+```
+
+Now if we want to connect to interact with the browser session remotely, we can
+use `cdt`'s interactive SDL front end:
+
+```bash
+./cdt sdl Codethink
+```
+
+Note that the display will be quite low resolution, because `cdt` is set up to
+minimise bandwidth overheads.
+
+The main purpose of `cdt` is to allow scripting of web app interaction. So let's
+try a command that scrolls the page:
+
+```bash
+./cdt swipe Codethink 400 300 up 800
+```
+
+And we can run a script in the JavaScript console.
+
+```JavaScript
+main = document.querySelector('main');
+main.style.backgroundColor = 'red';
+```
+
+This script will find the `<main>` element and turn its background red. To run
+it on the page, we can use the `run` command:
+
+```bash
+./cdt run Codethink "main = document.querySelector('main');main.style.backgroundColor = 'red';"
+```
+
+We can also run a script, watching the JavaScript `console.log` with the
+`run-log` command. By default this will keep fetching the log until the program
+is killed with <kbd>ctrl</kbd>+<kbd>c</kbd>.
+
+The optional `--end-marker` argument can be used to provide a string, that will
+cause the program to exit when the string appears in the log. For example:
+
+```bash
+./cdt run-log Codethink "console.log('Hello world')" -e "world"
 ```
 
 Design
