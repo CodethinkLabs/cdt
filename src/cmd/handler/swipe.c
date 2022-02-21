@@ -22,10 +22,25 @@ static struct swipe_ctx {
 	int64_t x;
 	int64_t y;
 	int64_t speed;
-	int64_t x_dist;
-	int64_t y_dist;
+	int64_t direction;
+	int64_t dist;
 } swipe_ctx = {
 	.speed = 800,
+};
+
+enum cmd_swipe_direction {
+	CMD_SWIPE_UP,
+	CMD_SWIPE_LEFT,
+	CMD_SWIPE_DOWN,
+	CMD_SWIPE_RIGHT,
+};
+
+static const struct cli_str_val cmd_cli_direction[] = {
+	{ .str = "up"   , .val = CMD_SWIPE_UP   , },
+	{ .str = "left" , .val = CMD_SWIPE_LEFT , },
+	{ .str = "down" , .val = CMD_SWIPE_DOWN , },
+	{ .str = "right", .val = CMD_SWIPE_RIGHT, },
+	{ .str = NULL, },
 };
 
 static const struct cli_table_entry cli_entries[] = {
@@ -46,17 +61,20 @@ static const struct cli_table_entry cli_entries[] = {
 	},
 	{
 		.p = true,
-		.l = "X_DIST",
-		.t = CLI_INT,
-		.v.i = &swipe_ctx.x_dist,
-		.d = "Scroll distance (X-axis)."
+		.l = "DIRECTION",
+		.t = CLI_ENUM,
+		.v.e.e = &swipe_ctx.direction, \
+		.v.e.desc = cmd_cli_direction, \
+		.d = "Swipe gesture direction (up, left, down, right). "
+		     "Note that this is gesture direction. If the gesture "
+		     "is for scrolling, the page will move with the gesture."
 	},
 	{
 		.p = true,
-		.l = "Y_DIST",
+		.l = "DIST",
 		.t = CLI_INT,
-		.v.i = &swipe_ctx.y_dist,
-		.d = "Scroll distance (Y-axis)."
+		.v.i = &swipe_ctx.dist,
+		.d = "Swipe gesture distance (pixels)."
 	},
 	{
 		.s = 's',
@@ -76,9 +94,18 @@ static bool cmd_swipe_init(int argc, const char **argv,
 		struct cmd_options *options, void **pw_out)
 {
 	int id;
+	int x_dist = 0;
+	int y_dist = 0;
 
 	if (!cmd_cli_parse(argc, argv, &cli, options)) {
 		return false;
+	}
+
+	switch (swipe_ctx.direction) {
+	case CMD_SWIPE_UP:    y_dist = -(int)swipe_ctx.dist; break;
+	case CMD_SWIPE_DOWN:  y_dist =  (int)swipe_ctx.dist; break;
+	case CMD_SWIPE_LEFT:  x_dist = -(int)swipe_ctx.dist; break;
+	case CMD_SWIPE_RIGHT: x_dist =  (int)swipe_ctx.dist; break;
 	}
 
 	msg_queue_for_send(&(const struct msg)
@@ -89,8 +116,8 @@ static bool cmd_swipe_init(int argc, const char **argv,
 					.x = (int)swipe_ctx.x,
 					.y = (int)swipe_ctx.y,
 					.speed = (int)swipe_ctx.speed,
-					.x_dist = (int)swipe_ctx.x_dist,
-					.y_dist = (int)swipe_ctx.y_dist,
+					.x_dist = x_dist,
+					.y_dist = y_dist,
 				},
 			},
 		}, &id);
