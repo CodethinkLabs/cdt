@@ -58,6 +58,7 @@ At the moment, the available commands are:
 | tap        | Issues touch events to simulate tapping at given coordinate     |
 | run        | Runs the supplied JavaScript script on the remote               |
 | swipe      | Synthesizes a scroll gesture over a time period                 |
+| tap-id     | Issues touch events to tap given document element by id         |
 | run-log    | Runs the supplied JavaScript on remote, capturing console.log   |
 | screencast | Fetches continuous screenshots and saves locally                |
 | screenshot | Fetches screenshot of the remote and saves locally              |

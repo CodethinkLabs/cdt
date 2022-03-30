@@ -25,6 +25,7 @@ extern const struct cmd_table cmd_sdl;
 extern const struct cmd_table cmd_run;
 extern const struct cmd_table cmd_tap;
 extern const struct cmd_table cmd_swipe;
+extern const struct cmd_table cmd_tap_id;
 extern const struct cmd_table cmd_run_log;
 extern const struct cmd_table cmd_screencast;
 extern const struct cmd_table cmd_screenshot;
@@ -35,6 +36,7 @@ const struct cmd_table *cmd_table[] = {
 	&cmd_run,
 	&cmd_tap,
 	&cmd_swipe,
+	&cmd_tap_id,
 	&cmd_run_log,
 	&cmd_screencast,
 	&cmd_screenshot,
