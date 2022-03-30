@@ -27,7 +27,12 @@
 static struct tap_id_ctx {
 	const char *id;
 
-	bool got_position;
+	int vw;
+	int vh;
+
+	int msg_id_vw;
+	int msg_id_vh;
+	int msg_id_pos;
 } tap_id_ctx;
 
 /**
@@ -72,7 +77,6 @@ static const struct cli_table cli = {
 static bool cmd_tap_id_init(int argc, const char **argv,
 		struct cmd_options *options, void **pw_out)
 {
-	int id;
 	char *script;
 
 	if (!cmd_cli_parse(argc, argv, &cli, options)) {
@@ -86,6 +90,28 @@ static bool cmd_tap_id_init(int argc, const char **argv,
 		return false;
 	}
 
+	/* Get the viewport width. */
+	msg_queue_for_send(&(const struct msg)
+		{
+			.type = MSG_TYPE_EVALUATE,
+			.data = {
+				.evaluate = {
+					.expression = "window.innerWidth",
+				},
+			},
+		}, &tap_id_ctx.msg_id_vw);
+
+	/* Get the viewport height. */
+	msg_queue_for_send(&(const struct msg)
+		{
+			.type = MSG_TYPE_EVALUATE,
+			.data = {
+				.evaluate = {
+					.expression = "window.innerHeight",
+				},
+			},
+		}, &tap_id_ctx.msg_id_vh);
+
 	/* Send element position acquisition script. */
 	msg_queue_for_send(&(const struct msg)
 		{
@@ -95,7 +121,7 @@ static bool cmd_tap_id_init(int argc, const char **argv,
 					.expression = script,
 				},
 			},
-		}, &id);
+		}, &tap_id_ctx.msg_id_pos);
 
 	free(script);
 	script = NULL;
@@ -109,6 +135,8 @@ struct element_pos {
 	int y;
 	int w;
 	int h;
+	int b;
+	int r;
 };
 
 static const struct cyaml_schema_field element_pos_fields_schema[] = {
@@ -116,6 +144,8 @@ static const struct cyaml_schema_field element_pos_fields_schema[] = {
 	CYAML_FIELD_INT("y", CYAML_FLAG_DEFAULT, struct element_pos, y),
 	CYAML_FIELD_INT("width", CYAML_FLAG_DEFAULT, struct element_pos, w),
 	CYAML_FIELD_INT("height", CYAML_FLAG_DEFAULT, struct element_pos, h),
+	CYAML_FIELD_INT("bottom", CYAML_FLAG_DEFAULT, struct element_pos, b),
+	CYAML_FIELD_INT("right", CYAML_FLAG_DEFAULT, struct element_pos, r),
 	CYAML_FIELD_END
 };
 
@@ -150,7 +180,19 @@ static void cmd_tap_id__do_tap(const char *pos_msg)
 		return;
 	}
 
-	tap_id_ctx.got_position = true;
+	if (pos->x < 0 || pos->r >= tap_id_ctx.vw ||
+	    pos->y < 0 || pos->b >= tap_id_ctx.vh) {
+		cdt_log(CDT_LOG_ERROR,
+				"Element '%s' outside viewport!",
+				tap_id_ctx.id);
+		cdt_log(CDT_LOG_NOTICE, " Viewport width  : %i", tap_id_ctx.vw);
+		cdt_log(CDT_LOG_NOTICE, " Viewport height : %i", tap_id_ctx.vh);
+		cdt_log(CDT_LOG_NOTICE, " Element left    : %i", pos->x);
+		cdt_log(CDT_LOG_NOTICE, " Element right   : %i", pos->r);
+		cdt_log(CDT_LOG_NOTICE, " Element top     : %i", pos->y);
+		cdt_log(CDT_LOG_NOTICE, " Element bottom  : %i", pos->b);
+		return;
+	}
 
 	cdt_log(CDT_LOG_NOTICE, "Tapping '%s' at: (%d, %d)",
 			tap_id_ctx.id,
@@ -183,7 +225,25 @@ static void cmd_tap_id_msg(void *pw, int id, const char *msg, size_t len)
 	cdt_log(CDT_LOG_INFO, "Received message with id %i: %*s",
 			id, (int)len, msg);
 
-	if (!tap_id_ctx.got_position) {
+	if (id == tap_id_ctx.msg_id_vw) {
+		bool res = decode_extract_response_value_int(msg, len,
+				&tap_id_ctx.vw);
+		if (res == false) {
+			cdt_log(CDT_LOG_ERROR,
+					"Error: Could not get viewport width");
+			return;
+		}
+
+	} else if (id == tap_id_ctx.msg_id_vh) {
+		bool res = decode_extract_response_value_int(msg, len,
+				&tap_id_ctx.vh);
+		if (res == false) {
+			cdt_log(CDT_LOG_ERROR,
+					"Error: Could not get viewport height");
+			return;
+		}
+
+	} else if (id == tap_id_ctx.msg_id_pos) {
 		char *value;
 
 		value = decode_extract_response_value(msg, len);
