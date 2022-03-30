@@ -21,6 +21,7 @@
 #include "util/cli.h"
 #include "util/log.h"
 #include "util/util.h"
+#include "util/decode.h"
 
 /* The log messages arrive as an array of arrays as a JSON string.
  * These are the schema to decode that to a `char ***` type. */
@@ -34,6 +35,12 @@ static const struct cyaml_schema_value value_inner_schema = {
 			&value_entry_schema, 1),
 };
 
+/* Schema to decode log message response JSON. */
+static const struct cyaml_schema_value value_schema = {
+	CYAML_VALUE_SEQUENCE(CYAML_FLAG_POINTER, char *,
+			&value_inner_schema, 0, CYAML_UNLIMITED),
+};
+
 /* Data structure for the log message response data. */
 struct message_response {
 	int id;
@@ -43,42 +50,6 @@ struct message_response {
 			char *value; /* Log messages in single JSON string */
 		} result;
 	} result;
-};
-
-/* Schema to decode log message response JSON. */
-
-static const struct cyaml_schema_value value_schema = {
-	CYAML_VALUE_SEQUENCE(CYAML_FLAG_POINTER, char *,
-			&value_inner_schema, 0, CYAML_UNLIMITED),
-};
-
-static const struct cyaml_schema_field run_log_fields_schema[] = {
-	CYAML_FIELD_STRING_PTR("type", CYAML_FLAG_POINTER,
-			struct run_log, type, 0, CYAML_UNLIMITED),
-	CYAML_FIELD_STRING_PTR("value", CYAML_FLAG_POINTER,
-			struct run_log, value, 0, CYAML_UNLIMITED),
-	CYAML_FIELD_END
-};
-
-static const struct cyaml_schema_field run_log_response_fields_schema[] = {
-	CYAML_FIELD_MAPPING("result", CYAML_FLAG_DEFAULT,
-			struct run_log_response, result,
-			run_log_fields_schema),
-	CYAML_FIELD_END
-};
-
-static const struct cyaml_schema_field message_response_fields_schema[] = {
-	CYAML_FIELD_STRING_PTR("id", CYAML_FLAG_DEFAULT,
-			struct message_response, id, 0, CYAML_UNLIMITED),
-	CYAML_FIELD_MAPPING("result", CYAML_FLAG_DEFAULT,
-			struct message_response, result,
-			run_log_response_fields_schema),
-	CYAML_FIELD_END
-};
-
-static const struct cyaml_schema_value message_response_schema = {
-	CYAML_VALUE_MAPPING(CYAML_FLAG_POINTER, struct message_response,
-			message_response_fields_schema),
 };
 
 /**
@@ -286,25 +257,11 @@ static void cmd_run_log_msg(void *pw, int id, const char *msg, size_t len)
 	} else if (id == ctx->id_fetch) {
 		char *raw;
 		bool complete;
-		cyaml_err_t res;
-		struct message_response *log_msg;
 
-		res = cyaml_load_data((const uint8_t *)msg, len,
-				&config,
-				&message_response_schema,
-				(void **)&log_msg, NULL);
-		if (res != CYAML_OK) {
-			cdt_log(CDT_LOG_ERROR,
-					"Failed to parse log message: %s",
-					cyaml_strerror(res));
+		raw = decode_extract_response_value(msg, len);
+		if (raw == NULL) {
 			return;
 		}
-
-		/* Extract raw log message data. */
-		raw = log_msg->result.result.value;
-		log_msg->result.result.value = NULL;
-		cyaml_free(&config, &message_response_schema, log_msg, 0);
-		log_msg = NULL;
 
 		complete = cmd_run_log__handle_raw(ctx, raw);
 		free(raw);
