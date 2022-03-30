@@ -80,6 +80,10 @@ char *decode_extract_response_value(const char *msg, size_t len)
 		return NULL;
 	}
 
+	if (strcmp(response->result.result.type, "string") != 0) {
+		cdt_log(CDT_LOG_WARNING, "Expecting value of type 'string'");
+	}
+
 	/* Extract the value. */
 	value = response->result.result.value;
 	response->result.result.value = NULL;
