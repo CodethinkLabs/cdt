@@ -58,7 +58,7 @@ static const struct cyaml_schema_value message_response_schema = {
 			message_response_fields_schema),
 };
 
-static const cyaml_config_t config = {
+static cyaml_config_t config = {
 	.flags = CYAML_CFG_IGNORE_UNKNOWN_KEYS,
 	.log_level = CYAML_LOG_WARNING,
 	.mem_fn = cyaml_mem,
@@ -70,6 +70,8 @@ char *decode_extract_response_value(const char *msg, size_t len)
 	struct message_response *response;
 	cyaml_err_t res;
 	char *value;
+
+	config.log_ctx = (void *) cdt_log_get_level();
 
 	res = cyaml_load_data((const uint8_t *)msg, len,
 			&config,
@@ -141,6 +143,8 @@ bool decode_extract_response_value_int(const char *msg, size_t len, int *ret)
 {
 	struct message_response_int *response;
 	cyaml_err_t res;
+
+	config.log_ctx = (void *) cdt_log_get_level();
 
 	res = cyaml_load_data((const uint8_t *)msg, len,
 			&config,
