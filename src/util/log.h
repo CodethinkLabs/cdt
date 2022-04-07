@@ -31,6 +31,13 @@ enum cdt_log_target {
 void cdt_log_set_level(enum cdt_log_level level);
 
 /**
+ * Get the minimum log level to record.
+ *
+ * \return Minimum level to record.
+ */
+enum cdt_log_level cdt_log_get_level(void);
+
+/**
  * Set the log target.
  *
  * \param[in] target  Where to send the log messages.

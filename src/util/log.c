@@ -26,6 +26,11 @@ void cdt_log_set_level(enum cdt_log_level level)
 	log_ctx.level = level;
 }
 
+enum cdt_log_level cdt_log_get_level(void)
+{
+	return log_ctx.level;
+}
+
 void cdt_log_set_target(enum cdt_log_target target)
 {
 	log_ctx.target = target;
