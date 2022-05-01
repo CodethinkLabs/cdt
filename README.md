@@ -57,6 +57,7 @@ At the moment, the available commands are:
 | sdl        | Interactive front end that renders display and supports tapping |
 | tap        | Issues touch events to simulate tapping at given coordinate     |
 | run        | Runs the supplied JavaScript script on the remote               |
+| drag       | Synthesizes a touch gesture over a time period                  |
 | swipe      | Synthesizes a scroll gesture over a time period                 |
 | tap-id     | Issues touch events to tap given document element by id         |
 | run-log    | Runs the supplied JavaScript on remote, capturing console.log   |
