@@ -52,6 +52,8 @@ static struct cmd_sdl_ctx {
 		int count;
 	} mouse;
 
+	bool quit;
+
 } cmd_sdl_g = {
 	.window_w = 800,
 	.window_h = 600,
@@ -421,11 +423,13 @@ static bool cmd_sdl__handle_input(struct cmd_sdl_ctx *ctx)
 	while (SDL_PollEvent(&event)) {
 		switch (event.type) {
 		case SDL_QUIT:
+			ctx->quit = true;
 			return false;
 
 		case SDL_KEYDOWN:
 			switch (event.key.keysym.sym) {
 			case SDLK_ESCAPE:
+				ctx->quit = true;
 				return false;
 			}
 			break;
@@ -498,7 +502,7 @@ static bool cmd_sdl_tick(void *pw)
 		SDL_RenderPresent(ctx->ren);
 	}
 
-	return running;
+	return (ctx->quit == false);
 }
 
 static void cmd_sdl_help(int argc, const char **argv);
